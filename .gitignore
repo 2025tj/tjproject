@@ -22,3 +22,86 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+### IntelliJ ###
+.idea/
+*.iml
+*.iws
+out/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Java ###
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+### Spring Boot ###
+target/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### Gradle ###
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+gradle-app.properties
+
+### Maven ###
+.mvn/
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+### Logs ###
+*.log
+logs/
+*.out
+
+### Environment ###
+.env
+*.env
+.env.*
+
+### Test reports ###
+test-output/
+surefire-reports/
+jacoco.exec
+
+### IDE 설정 ###
+*.swp
+*.swo
+*.bak
+
+### 기타 ###
+node_modules/
+*.lock
+bin/
+tmp/
+*.tmp
+*.bak
+*.old
+
+### Local DB / Cache ###
+*.h2.db
+*.mv.db
+*.sqlite
+*.db
+*.db-journal
+*.cache
+*.log
+
+### Docker ###
+*.pid
+docker-compose.override.yml
+
+### 기타 사용자 정의 제외 ###
+# /secret/          # 예: 비밀 설정 파일 위치

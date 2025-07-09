@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -21,11 +22,14 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             HttpServletResponse response,
             Authentication authentication
     ) throws IOException, ServletException {
-        String email = authentication.getName(); // or extract from Principal
+        OAuth2User oAuth2User =(OAuth2User) authentication.getPrincipal();
+        String email = oAuth2User.getAttribute("email");
         String token = jwtProvider.createToken(email);
 
         // 프론트로 토큰 전달 (리디렉션 or JSON 응답)
-        response.sendRedirect("/login/success?token="+token);
+//        response.sendRedirect("/login/success?token="+token);
+        response.sendRedirect("http://localhost:5173/oauth2/redirect?token="+token);
+
     }
 
 

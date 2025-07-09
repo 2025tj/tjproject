@@ -4,10 +4,8 @@ import com.tj.tjp.dto.SignupRequest;
 import com.tj.tjp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
@@ -19,5 +17,10 @@ public class UserController {
     public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
         Long userId = userService.signup(request);
         return ResponseEntity.ok("회원가입 성공. ID: " + userId);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<String> getCurrentUser(Authentication authentication) {
+        return ResponseEntity.ok(authentication.getName());
     }
 }

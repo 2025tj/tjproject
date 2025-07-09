@@ -3,6 +3,7 @@ package com.tj.tjp.config;
 import com.tj.tjp.security.JwtAuthenticationFilter;
 import com.tj.tjp.security.OAuth2SuccessHandler;
 import com.tj.tjp.security.OAuth2UserCumstomService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // csrf 비활성화
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/users/me").authenticated() // 토큰 필요하게 설정
                         .requestMatchers("/api/users/**", "/login/**").permitAll() // 회원가입, 로그인은 인증없이 허용
                         .anyRequest().authenticated()
                 )
@@ -34,6 +36,16 @@ public class SecurityConfig {
                                 .userService(oAuth2UserCumstomService)
                         )
                         .successHandler(oAuth2SuccessHandler)
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+                            response.setHeader("Access-Control-Allow-Credentials", "true");
+                            response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                        })
                 );
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 //                .formLogin(Customizer.withDefaults()); // 기본인증방식

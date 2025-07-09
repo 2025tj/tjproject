@@ -26,9 +26,19 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String email = oAuth2User.getAttribute("email");
         String token = jwtProvider.createToken(email);
 
+        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("accessToken", token);
+        cookie.setHttpOnly(true); // js 접근 불가
+//        cookie.setSecure(true); // https에서만?( 개발중엔 false)
+        cookie.setPath("/");
+        cookie.setMaxAge(60*60); // 1시간 유지
+
+        response.addCookie(cookie);
+
         // 프론트로 토큰 전달 (리디렉션 or JSON 응답)
 //        response.sendRedirect("/login/success?token="+token);
-        response.sendRedirect("http://localhost:5173/oauth2/redirect?token="+token);
+//        response.sendRedirect("http://localhost:5173/oauth2/redirect?token="+token);
+        response.sendRedirect("http://localhost:5173");
+
 
     }
 

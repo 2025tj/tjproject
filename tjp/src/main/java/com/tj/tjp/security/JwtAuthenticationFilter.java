@@ -2,11 +2,14 @@ package com.tj.tjp.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.parameters.P;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -38,23 +41,50 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String header = request.getHeader("Authorization");
+        // jwt 쿠키에서 추출
+        String token = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
 
-        if (header != null && header.startsWith("Bearer")) {
-            String token = header.substring(7);
+        if (token != null) {
             try {
-                String email= jwtProvider.validateAndGetEmail(token);
+                String email = jwtProvider.validateAndGetEmail(token);
+                UserPrincipal userPrincipal = new UserPrincipal(email);
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+                        new UsernamePasswordAuthenticationToken(userPrincipal,null, userPrincipal.getAuthorities());
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
-                // 유효하지 않은 트큰이면 인증없이 넘어감
-                logger.warn("JWT 검증 실패: "+e.getMessage());
+                logger.warn("JWT 검증 실패: " + e.getMessage());
             }
         }
+
+        // localStorage방식
+//        String header = request.getHeader("Authorization");
+//
+//        if (header != null && header.startsWith("Bearer")) {
+//            String token = header.substring(7);
+//            try {
+//                String email= jwtProvider.validateAndGetEmail(token);
+//
+//                UsernamePasswordAuthenticationToken authentication =
+//                        new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+//
+//                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+//                SecurityContextHolder.getContext().setAuthentication(authentication);
+//            } catch (Exception e) {
+//                // 유효하지 않은 트큰이면 인증없이 넘어감
+//                logger.warn("JWT 검증 실패: "+e.getMessage());
+//            }
+//        }
         filterChain.doFilter(request, response);
     }
 }

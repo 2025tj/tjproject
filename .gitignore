@@ -65,6 +65,7 @@ release.properties
 *.log
 logs/
 *.out
+/logs/
 
 ### Environment ###
 .env

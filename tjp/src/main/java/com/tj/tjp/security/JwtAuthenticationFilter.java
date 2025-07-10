@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.parameters.P;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
@@ -16,6 +18,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.tj.tjp.util.CookieUtils.getAccessToken;
+import static com.tj.tjp.util.CookieUtils.getRefreshToken;
 
 @Component
 @RequiredArgsConstructor
@@ -42,20 +49,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // jwt 쿠키에서 추출
-        String token = null;
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("accessToken".equals(cookie.getName())) {
-                    token = cookie.getValue();
-                    break;
-                }
-            }
-        }
+        String token = getAccessToken(request);
+//        String token = null;
+//        if (request.getCookies() != null) {
+//            for (Cookie cookie : request.getCookies()) {
+//                if ("accessToken".equals(cookie.getName())) {
+//                    token = cookie.getValue();
+//                    break;
+//                }
+//            }
+//        }
 
         if (token != null) {
             try {
-                String email = jwtProvider.validateAndGetEmail(token);
-                UserPrincipal userPrincipal = new UserPrincipal(email);
+                String email = jwtProvider.getEmailFromToken(token);
+                List<String> roles = jwtProvider.getRolesFromToken(token);
+                List<GrantedAuthority> authorities = roles.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+                UserPrincipal userPrincipal = new UserPrincipal(
+                        email,
+                        List.of(()->"ROLE_USER")
+                );
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userPrincipal,null, userPrincipal.getAuthorities());

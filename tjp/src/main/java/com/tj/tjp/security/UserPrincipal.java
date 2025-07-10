@@ -1,6 +1,7 @@
 package com.tj.tjp.security;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
@@ -11,18 +12,23 @@ import java.util.Map;
 
 public class UserPrincipal implements UserDetails, OAuth2User {
     private final String email;
-    private final Collection<? extends GrantedAuthority> authorities;
+//    private final Collection<? extends GrantedAuthority> authorities;
+    private final List<String> roles;
     private Map<String, Object> attributes;
 
-    public UserPrincipal(String email, Collection<? extends GrantedAuthority> authorities) {
+    public UserPrincipal(String email, List<String> roles) {
         this.email =email;
-        this.authorities=authorities;
+        this.roles=roles;
     }
 
-    public static UserPrincipal create(String email, Map<String, Object> attributes) {
-        UserPrincipal userPrincipal = new UserPrincipal(email, List.of(() -> "ROLE_USER"));
-        userPrincipal.setAttributes(attributes);
-        return userPrincipal;
+//    public static UserPrincipal create(String email, Map<String, Object> attributes) {
+//        UserPrincipal userPrincipal = new UserPrincipal(email, List.of(() -> "ROLE_USER"));
+//        userPrincipal.setAttributes(attributes);
+//        return userPrincipal;
+//    }
+
+    public List<String> getRoleList() {
+        return roles;
     }
 
     public void setAttributes(Map<String, Object> attributes) {
@@ -41,7 +47,7 @@ public class UserPrincipal implements UserDetails, OAuth2User {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authorities;
+        return roles.stream().map(SimpleGrantedAuthority::new).toList();
     }
 
     @Override

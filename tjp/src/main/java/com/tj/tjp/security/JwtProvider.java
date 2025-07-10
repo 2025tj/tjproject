@@ -27,16 +27,26 @@ public class JwtProvider {
     }
 
     public String createAccessToken(String email, List<String> roles) {
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + Duration.ofHours(1).toMillis());
+        Claims claims = Jwts.claims().setSubject(email);
+        claims.put("roles", roles);
 
         return Jwts.builder()
-                .setSubject(email)
-                .claim("roles", roles)
-                .setIssuedAt(now)
-                .setExpiration(expiry)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .setClaims(claims)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_MS))
+                .signWith(SignatureAlgorithm.HS512, secretKey)
                 .compact();
+
+//        Date now = new Date();
+//        Date expiry = new Date(now.getTime() + Duration.ofHours(1).toMillis());
+
+//        return Jwts.builder()
+//                .setSubject(email)
+//                .claim("roles", roles)
+//                .setIssuedAt(now)
+//                .setExpiration(expiry)
+//                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+//                .compact();
     }
 
     public List<String> getRolesFromToken(String token) {
@@ -51,9 +61,10 @@ public class JwtProvider {
     public String createRefreshToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
+                .setIssuedAt(new Date())
                 .setExpiration((new Date(System.currentTimeMillis() +
                         REFRESH_TOKEN_EXPIRATION_MS)))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 

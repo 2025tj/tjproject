@@ -69,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .collect(Collectors.toList());
                 UserPrincipal userPrincipal = new UserPrincipal(
                         email,
-                        List.of(()->"ROLE_USER")
+                        List.of("ROLE_USER")
                 );
 
                 UsernamePasswordAuthenticationToken authentication =

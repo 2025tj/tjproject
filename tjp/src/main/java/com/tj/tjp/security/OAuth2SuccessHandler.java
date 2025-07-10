@@ -28,25 +28,23 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     ) throws IOException, ServletException {
         log.info("[OAuth2SuccessHandler] 소셜 로그인 성공");
 
-        try {
-            Object principal = authentication.getPrincipal();
-            log.info("Principal class: {}", principal.getClass().getName());
-        } catch (Exception e) {
-            log.error("Authentication principal error", e);
+//        UserPrincipal userPrincipal =(UserPrincipal) authentication.getPrincipal();
+//        String email = userPrincipal.getUsername();
+//        List<String> roles = userPrincipal.getAuthorities().stream()
+//                .map(auth -> auth.getAuthority())
+//                .toList();
+        if (!(authentication.getPrincipal() instanceof UserPrincipal user)) {
+            log.error("[OAuth2SuccessHandler] principal 타입 불일치: {}", authentication.getPrincipal().getClass());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid principal");
+            return;
         }
 
-        UserPrincipal userPrincipal =(UserPrincipal) authentication.getPrincipal();
-        String email = userPrincipal.getUsername();
-        List<String> roles = userPrincipal.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .toList();
-
-        log.info("[OAuth2SuccessHandler] 사용자 email: {}", email);
-        log.info("[OAuth2SuccessHandler] 사용자 roles: {}", roles);
+        log.info("[OAuth2SuccessHandler] 사용자 email: {}", user.getUsername());
+        log.info("[OAuth2SuccessHandler] 사용자 roles: {}", user.getRoleList());
 
         // access & refresh token 생성
-        String accessToken = jwtProvider.createAccessToken(email, roles);
-        String refreshToken = jwtProvider.createRefreshToken(email);
+        String accessToken = jwtProvider.createAccessToken(user.getUsername(), user.getRoleList());
+        String refreshToken = jwtProvider.createRefreshToken(user.getUsername());
 
         log.info("[OAuth2SuccessHandler] accessToken 생성 완료");
         log.info("[OAuth2SuccessHandler] refreshToken 생성 완료");
@@ -61,7 +59,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         cookie.setSecure(false); // https에서만?( 개발중엔 false)
         cookie.setPath("/");
         cookie.setMaxAge(7*24*60*60); // 7일 유지
-        cookie.setAttribute("SameSite", "None");
+        cookie.setAttribute("SameSite", "Lax");
 
         response.addCookie(cookie);
 

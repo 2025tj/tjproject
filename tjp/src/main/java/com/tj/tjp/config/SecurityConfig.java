@@ -1,5 +1,6 @@
 package com.tj.tjp.config;
 
+import com.tj.tjp.security.CustomOAuth2FailureHandler;
 import com.tj.tjp.security.CustomOAuth2UserService;
 import com.tj.tjp.security.JwtAuthenticationFilter;
 import com.tj.tjp.security.OAuth2SuccessHandler;
@@ -17,6 +18,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Slf4j
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -26,18 +29,24 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(withDefaults())
                 .csrf(csrf -> csrf.disable()) // csrf 비활성화
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/users/me").authenticated() // 토큰 필요하게 설정
                         .requestMatchers("/api/users/**",
+                                "/api/auth/**",
+                                "/api/auth/signup",
+                                "/api/auth/signup/local",
+                                "/api/auth/login",
+                                "/api/auth/login/local",
+                                "/api/auth/refresh",
                                 "/login/**",
-                                "/oauth2/**",
-                                "/api/users/login",
-                                "/api/users/refresh").permitAll() // 회원가입, 로그인은 인증없이 허용
+                                "/oauth2/**").permitAll() // 회원가입, 로그인은 인증없이 허용
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -52,10 +61,7 @@ public class SecurityConfig {
                                 .userService(customOAuth2UserService)
                         )
                         .successHandler(oAuth2SuccessHandler) // 토큰발급후 리디렉션
-                        .failureHandler((req, res, e) -> {
-                            log.error("OAuth2 로그인 실패", e);
-                            res.sendRedirect("http://localhost:5173/oauth2/failure");
-                        })
+                        .failureHandler(customOAuth2FailureHandler)
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {

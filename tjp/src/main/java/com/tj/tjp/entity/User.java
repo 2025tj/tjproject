@@ -25,6 +25,13 @@ public class User {
     @Column(name="password", nullable = true)
     private String password;
 
+    @Column(name="nickname", nullable=true, unique=true, length=30)
+    private String nickname;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="provider", nullable=false, length=20)
+    private ProviderType provider;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "user_roles",  // 테이블 이름 명시
@@ -34,7 +41,15 @@ public class User {
     @Builder.Default
     private Set<String> roles = new HashSet<>();
 
-    public void update(String password) {
+    public void updatePassword(String password) {
         this.password = password;
+    }
+
+    public void updateProfile(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void updateProvider(ProviderType provider) {
+        this.provider=provider;
     }
 }

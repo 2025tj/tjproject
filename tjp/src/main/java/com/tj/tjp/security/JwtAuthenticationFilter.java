@@ -1,11 +1,13 @@
 package com.tj.tjp.security;
 
+import com.tj.tjp.entity.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 import static com.tj.tjp.util.CookieUtils.getAccessToken;
 import static com.tj.tjp.util.CookieUtils.getRefreshToken;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -36,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // CORS 응답 헤더 수동 설정
+        // CORS 응답 헤더 수동 설정(로컬개발용)
         response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
         response.setHeader("Access-Control-Allow-Credentials", "true");
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -50,30 +53,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // jwt 쿠키에서 추출
         String token = getAccessToken(request);
-//        String token = null;
-//        if (request.getCookies() != null) {
-//            for (Cookie cookie : request.getCookies()) {
-//                if ("accessToken".equals(cookie.getName())) {
-//                    token = cookie.getValue();
-//                    break;
-//                }
-//            }
-//        }
+
+        // authorization헤더에서 토큰 추출 (LocalStorage용)
+        if (token == null) {
+            String header =request.getHeader("Authorization");
+            if (header!=null && header.startsWith("Bearer ")) {
+                token =header.substring(7);
+            }
+        }
+
+        log.info("[jwt필터] 추출한 토큰: {}", token);
 
         if (token != null) {
             try {
                 String email = jwtProvider.getEmailFromToken(token);
                 List<String> roles = jwtProvider.getRolesFromToken(token);
-                List<GrantedAuthority> authorities = roles.stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+                log.info("[jwt필터] 이메일: {}, 권한: {}", email, roles);
+
+                // 인증 객체 설정
                 UserPrincipal userPrincipal = new UserPrincipal(
                         email,
-                        List.of("ROLE_USER")
-                );
+                        null, // password는 인증에 필요 없음
+                        roles);
+
+//                List<GrantedAuthority> authorities = roles.stream()
+//                        .map(SimpleGrantedAuthority::new)
+//                        .collect(Collectors.toList());
+//                UserPrincipal userPrincipal = new UserPrincipal(
+//                        email,
+//                        List.of("ROLE_USER")
+//                );
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userPrincipal,null, userPrincipal.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(
+                                userPrincipal,
+                                null,
+                                userPrincipal.getAuthorities());
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);

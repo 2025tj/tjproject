@@ -3,6 +3,7 @@ package com.tj.tjp.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 
+@Slf4j
 @Component
 public class JwtProvider {
 
@@ -34,7 +36,7 @@ public class JwtProvider {
                 .setClaims(claims)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_MS))
-                .signWith(SignatureAlgorithm.HS512, secretKey)
+                .signWith(SignatureAlgorithm.HS256, getSigningKey())
                 .compact();
 
 //        Date now = new Date();
@@ -64,7 +66,7 @@ public class JwtProvider {
                 .setIssuedAt(new Date())
                 .setExpiration((new Date(System.currentTimeMillis() +
                         REFRESH_TOKEN_EXPIRATION_MS)))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -74,6 +76,7 @@ public class JwtProvider {
     }
 
     public String getEmailFromToken(String token) {
+        log.info("jwtprovider 전달받은토큰: {}", token);
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()

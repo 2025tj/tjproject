@@ -1,5 +1,6 @@
 package com.tj.tjp.security;
 
+import com.tj.tjp.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,19 +14,30 @@ import java.util.Map;
 public class UserPrincipal implements UserDetails, OAuth2User {
     private final String email;
 //    private final Collection<? extends GrantedAuthority> authorities;
+    private final String password;
     private final List<String> roles;
     private Map<String, Object> attributes;
 
-    public UserPrincipal(String email, List<String> roles) {
+    public UserPrincipal(String email, String password, List<String> roles) {
         this.email =email;
+        this.password =password;
         this.roles=roles;
     }
 
-//    public static UserPrincipal create(String email, Map<String, Object> attributes) {
-//        UserPrincipal userPrincipal = new UserPrincipal(email, List.of(() -> "ROLE_USER"));
-//        userPrincipal.setAttributes(attributes);
-//        return userPrincipal;
-//    }
+    // 일반로그인
+    public static UserPrincipal create(User user) {
+        return new UserPrincipal(
+                user.getEmail(),
+                user.getPassword(),
+                user.getRoles().stream().toList()
+        );
+    }
+    // Oauth2 전용
+    public static UserPrincipal create(User user, Map<String, Object> attributes) {
+        UserPrincipal principal = create(user);
+        principal.setAttributes(attributes);
+        return principal;
+    }
 
     public List<String> getRoleList() {
         return roles;
@@ -52,7 +64,7 @@ public class UserPrincipal implements UserDetails, OAuth2User {
 
     @Override
     public String getPassword() {
-        return null;
+        return password;
     }
 
     @Override

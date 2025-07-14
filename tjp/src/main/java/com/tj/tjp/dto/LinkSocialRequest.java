@@ -1,6 +1,6 @@
 package com.tj.tjp.dto;
 
-import com.tj.tjp.entity.ProviderType;
+import com.tj.tjp.entity.user.ProviderType;
 import lombok.Getter;
 import lombok.Setter;
 

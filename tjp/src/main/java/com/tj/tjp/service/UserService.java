@@ -1,15 +1,13 @@
 package com.tj.tjp.service;
 
-import com.tj.tjp.dto.LocalSignupRequest;
-import com.tj.tjp.dto.SignupRequest;
-import com.tj.tjp.dto.UpdateUserRequest;
-import com.tj.tjp.entity.ProviderType;
-import com.tj.tjp.entity.User;
-import com.tj.tjp.repository.UserRepository;
+import com.tj.tjp.dto.auth.singup.SignupRequest;
+import com.tj.tjp.dto.user.UpdateUserRequest;
+import com.tj.tjp.entity.user.ProviderType;
+import com.tj.tjp.entity.user.User;
+import com.tj.tjp.repository.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,38 +21,24 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public Long signup(SignupRequest dto) {
-        if (userRepository.findByEmail(dto.email()).isPresent()) {
-            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
-        }
-
-        User user= User.builder()
-                .email(dto.email())
-                .password(passwordEncoder.encode(dto.password()))
-                .roles(Set.of("ROLE_USER"))
-                .build();
-
-        return userRepository.save(user).getId();
-    }
-
     @Transactional
-    public Long localSignup(LocalSignupRequest dto) {
+    public Long signup(SignupRequest dto) {
         if (userRepository.findByEmail(dto.email()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
         if (userRepository.findByNickname(dto.nickname()).isPresent()) {
             throw new IllegalArgumentException("이미 사용중인 닉네임입니다.");
         }
-        User user = User.builder()
+        User user= User.builder()
                 .email(dto.email())
                 .password(passwordEncoder.encode(dto.password()))
                 .nickname(dto.nickname())
-                .provider(dto.provider()) // providerType.LOCAL
                 .roles(Set.of("ROLE_USER"))
+                .provider(dto.provider()) // providerType.LOCAL
                 .build();
         Long id = userRepository.save(user).getId();
         log.info("회원가입 성공: {} (id : {})", user.getEmail(), id);
-        return  id;
+        return id;
     }
 
     public void updateUserInfo(String email, UpdateUserRequest request) {
@@ -92,7 +76,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void linkSocialAccount(String email, String provider) {
+    public User linkSocialAccount(String email, ProviderType provider) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
@@ -100,9 +84,8 @@ public class UserService {
         if (user.getProvider() != null) {
             throw new IllegalArgumentException("이미 연동된 계정입니다.");
         }
-        ProviderType providerType= ProviderType.from(provider);
-        user.updateProvider(providerType); // 혹은 연동 테이블을 두어 관계 맺기?
-        userRepository.save(user);
+        user.updateProvider(provider); // 혹은 연동 테이블을 두어 관계 맺기?
+        return userRepository.save(user);
     }
 
 }

@@ -39,9 +39,6 @@ spring:
               - email
               - profile
 
-  jwt:
-    secret: ${JWT_SECRET_KEY}
-
 server:
   port: 8080
 
@@ -53,4 +50,19 @@ logging:
     org.springframework.security: DEBUG
 
 frontend:
-  redirect-url: http://localhost:5173/oauth2/redirect
+  redirect-url: http://localhost:5173/oauth2/callback
+  allowed-origins:
+    - http://localhost:5173
+
+app:
+  jwt:
+    # 토큰 서명에 사용할 비밀 키
+    secret: ${JWT_SECRET_KEY}
+    # AccessToken 유효기간 (밀리초 단위)
+    access-token-ttl: 60000         # 1분
+    # RefreshToken 유효기간 (밀리초 단위)
+    refresh-token-ttl: 604800000    # 7일
+    # 토큰 발급자(issuer)
+    issuer: tjp-backend
+    # (선택) 필터 전략: header, cookie, hybrid 중 하나
+    strategy: header

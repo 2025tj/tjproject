@@ -1,17 +1,21 @@
 package com.tj.tjp.security;
 
+import com.tj.tjp.config.FrontendProperties;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Slf4j
@@ -19,6 +23,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final JwtProvider jwtProvider;
+    private final FrontendProperties frontendProperties;
+
+//    @Value("${frontend.redirect-url}")
+//    private String frontendRedirectUrl;
+    String frontendRedirectUrl = frontendProperties.getRedirectUrl();
 
     @Override
     public void onAuthenticationSuccess(
@@ -26,32 +35,39 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             HttpServletResponse response,
             Authentication authentication
     ) throws IOException, ServletException {
-        log.info("[OAuth2SuccessHandler] 소셜 로그인 성공");
-
-//        UserPrincipal userPrincipal =(UserPrincipal) authentication.getPrincipal();
-//        String email = userPrincipal.getUsername();
-//        List<String> roles = userPrincipal.getAuthorities().stream()
-//                .map(auth -> auth.getAuthority())
-//                .toList();
-        if (!(authentication.getPrincipal() instanceof UserPrincipal user)) {
-            log.error("[OAuth2SuccessHandler] principal 타입 불일치: {}", authentication.getPrincipal().getClass());
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof AuthenticatedUser user)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid principal");
             return;
         }
-
-        log.info("[OAuth2SuccessHandler] 사용자 email: {}", user.getUsername());
-        log.info("[OAuth2SuccessHandler] 사용자 roles: {}", user.getRoleList());
+        // 차단된 사용자 처리
+        if (principal instanceof BlockedOAuth2UserPrincipal blocked) {
+            String error = URLEncoder.encode(blocked.getReason(), StandardCharsets.UTF_8);
+            response.sendRedirect(frontendRedirectUrl+"?error="+error);
+            return;
+        }
+        // 연동 가능한 사용자 처리
+        if (principal instanceof LinkableOAuth2UserPrincipal linkable) {
+            response.sendRedirect(frontendRedirectUrl+"?link=true");
+            return;
+        }
+        // 정상 로그인 사용자 처리 (access, refresh토큰 발급)
+        String email = user.getEmail();
+        List<String> roles = user.getUser().getRoles().stream().toList();
 
         // access & refresh token 생성
-        String accessToken = jwtProvider.createAccessToken(user.getUsername(), user.getRoleList());
-        String refreshToken = jwtProvider.createRefreshToken(user.getUsername());
-
-        log.info("[OAuth2SuccessHandler] accessToken 생성 완료");
-        log.info("[OAuth2SuccessHandler] refreshToken 생성 완료");
-
+        String accessToken = jwtProvider.createAccessToken(email, roles);
+        String refreshToken = jwtProvider.createRefreshToken(email);
 
         // accessToken은 localStorage에 저장할 것이므로 클라이언트에 보내줌
-        // redirect URL에 쿼리로 포함해도 되고 JSON으로도 가능
+        // redirect URL에 쿼리로 포함해도 되고 JSON으로도 가능하지만 쿠키에 담아 보내는게 가장 안전
+        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
+        accessTokenCookie.setHttpOnly(false); // js 접근 허용
+        accessTokenCookie.setSecure(false); // HTTPS 적용시 true
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(60); // 1분 내 사용 후 js에서 삭제 권장
+        accessTokenCookie.setAttribute("SameSite", "Lax");
+        response.addCookie(accessTokenCookie);
 
         // refreshToken을 쿠키로 저장
         Cookie cookie = new Cookie("refreshToken", refreshToken);
@@ -63,15 +79,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         response.addCookie(cookie);
 
-        // 프론트로 토큰 전달 (리디렉션 or JSON 응답)
-//        response.sendRedirect("/login/success?token="+token);
-        // 프론트엔드로 accessToken을 쿼리로 넘김
-        String redirectUrl ="http://localhost:5173/oauth2/redirect?accessToken="+accessToken;
-//        response.sendRedirect("http://localhost:5173");
-        log.info("[OAuth2SuccessHandler] 프론트로 리디렉션: {}", redirectUrl);
-        response.sendRedirect(redirectUrl);
-
+        // 프론트로 토큰 전달 (리디렉션 or JSON 응답) 리디렉션: 프론트는 쿠키에서 AccessToken꺼내서 처리
+        response.sendRedirect(frontendRedirectUrl);
     }
-
-
 }

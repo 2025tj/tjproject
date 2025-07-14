@@ -4,8 +4,9 @@ import com.tj.tjp.dto.LocalLoginRequest;
 import com.tj.tjp.dto.LocalSignupRequest;
 import com.tj.tjp.dto.LoginRequest;
 import com.tj.tjp.dto.SignupRequest;
+import com.tj.tjp.security.AuthenticatedUser;
 import com.tj.tjp.security.JwtProvider;
-import com.tj.tjp.security.UserPrincipal;
+import com.tj.tjp.security.LocalUserPrincipal;
 import com.tj.tjp.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -51,66 +52,113 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletResponse response) {
-        // 사용자 인증처리
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-
-        // 인증된 사용자 정보에서 roles 가져오기
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        String email = userPrincipal.getUsername();
-        var roles = userPrincipal.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .toList();
-
-        // jwt 생성
-        String accessToken = jwtProvider.createAccessToken(email, roles);
-        String refreshToken = jwtProvider.createRefreshToken(email);
-
-        // jwt를 쿠키로 내려주기
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(false) // 운영에서는 treu, https접속 관련
-                .path("/")
-                .maxAge(Duration.ofDays(7))
-                .sameSite("Lax") // 프론트, 백 분리인 경우 반드시 None, 개발중엔 Lax
-                .build();
-
-        response.setHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-
-        // 사용자 정보 응답
-        return ResponseEntity.ok(Map.of("accessToken", accessToken));
+        return authenticateAndRespond(request.getEmail(), request.getPassword(), response);
     }
 
     @PostMapping("/login/local")
-    public ResponseEntity<?> login(@RequestBody @Valid LocalLoginRequest request, HttpServletResponse response) {
-        //사용자 인증 처리
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        String email = userPrincipal.getUsername();
-        List<String> roles = userPrincipal.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .toList();
+    public ResponseEntity<?> loginLocal(@RequestBody @Valid LocalLoginRequest request, HttpServletResponse response) {
+        return authenticateAndRespond(request.email(), request.password(), response);
+    }
 
-        //jwt 발급
+    private ResponseEntity<?> authenticateAndRespond(String email, String password, HttpServletResponse response) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(email, password)
+        );
+
+        AuthenticatedUser userPrincipal = (AuthenticatedUser) authentication.getPrincipal();
+        String principalEmail = userPrincipal.getEmail();
+        List<String> roles = userPrincipal.getUser().getRoles().stream().toList();
+
         String accessToken = jwtProvider.createAccessToken(email, roles);
         String refreshToken = jwtProvider.createRefreshToken(email);
 
-        //refreshToken을 쿠키로 저장
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+        response.addHeader(HttpHeaders.SET_COOKIE, createAccessTokenCookie(accessToken).toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(refreshToken).toString());
+
+        return ResponseEntity.ok(Map.of("message", "로그인 성공"));
+    }
+
+    private ResponseCookie createAccessTokenCookie(String token) {
+        return ResponseCookie.from("accessToken", token)
+                .httpOnly(false)
+                .secure(false)
+                .path("/")
+                .maxAge(60)
+                .sameSite("Lax")
+                .build();
+    }
+
+    private ResponseCookie createRefreshTokenCookie(String token) {
+        return ResponseCookie.from("refreshToken", token)
                 .httpOnly(true)
-                .secure(false) // 운영은 true(https)
+                .secure(false)
                 .path("/")
                 .maxAge(Duration.ofDays(7))
                 .sameSite("Lax")
                 .build();
-        response.setHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-        return ResponseEntity.ok(Map.of("accessToken", accessToken));
-
-
     }
+//    @PostMapping("/login")
+//    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+//        // 사용자 인증처리
+//        Authentication authentication = authenticationManager.authenticate(
+//                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+//        );
+//
+//        // 인증된 사용자 정보에서 roles 가져오기
+//        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+//        String email = userPrincipal.getUsername();
+//        var roles = userPrincipal.getAuthorities().stream()
+//                .map(auth -> auth.getAuthority())
+//                .toList();
+//
+//        // jwt 생성
+//        String accessToken = jwtProvider.createAccessToken(email, roles);
+//        String refreshToken = jwtProvider.createRefreshToken(email);
+//
+//        // jwt를 쿠키로 내려주기
+//        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+//                .httpOnly(true)
+//                .secure(false) // 운영에서는 treu, https접속 관련
+//                .path("/")
+//                .maxAge(Duration.ofDays(7))
+//                .sameSite("Lax") // 프론트, 백 분리인 경우 반드시 None, 개발중엔 Lax
+//                .build();
+//
+//        response.setHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+//
+//        // 사용자 정보 응답
+//        return ResponseEntity.ok(Map.of("accessToken", accessToken));
+//    }
+
+//    @PostMapping("/login/local")
+//    public ResponseEntity<?> login(@RequestBody @Valid LocalLoginRequest request, HttpServletResponse response) {
+//        //사용자 인증 처리
+//        Authentication authentication = authenticationManager.authenticate(
+//                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+//        );
+//        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+//        String email = userPrincipal.getUsername();
+//        List<String> roles = userPrincipal.getAuthorities().stream()
+//                .map(auth -> auth.getAuthority())
+//                .toList();
+//
+//        //jwt 발급
+//        String accessToken = jwtProvider.createAccessToken(email, roles);
+//        String refreshToken = jwtProvider.createRefreshToken(email);
+//
+//        //refreshToken을 쿠키로 저장
+//        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+//                .httpOnly(true)
+//                .secure(false) // 운영은 true(https)
+//                .path("/")
+//                .maxAge(Duration.ofDays(7))
+//                .sameSite("Lax")
+//                .build();
+//        response.setHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+//        return ResponseEntity.ok(Map.of("accessToken", accessToken));
+//
+//
+//    }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {

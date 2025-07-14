@@ -1,11 +1,14 @@
 package com.tj.tjp;
 
+import com.tj.tjp.config.FrontendProperties;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
+@EnableConfigurationProperties(FrontendProperties.class)
 @SpringBootApplication
 public class TjpApplication {
 	private static final Logger log = LoggerFactory.getLogger(TjpApplication.class);

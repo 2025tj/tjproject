@@ -1,30 +1,16 @@
 package com.tj.tjp.controller;
 
 import com.tj.tjp.dto.*;
-import com.tj.tjp.entity.User;
-import com.tj.tjp.repository.UserRepository;
 import com.tj.tjp.security.JwtProvider;
-import com.tj.tjp.security.UserPrincipal;
 import com.tj.tjp.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import static com.tj.tjp.util.CookieUtils.getRefreshToken;
 
 @RestController
 @RequestMapping("/api/users")

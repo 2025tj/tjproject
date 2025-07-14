@@ -76,7 +76,6 @@ public class JwtProvider {
     }
 
     public String getEmailFromToken(String token) {
-        log.info("jwtprovider 전달받은토큰: {}", token);
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()

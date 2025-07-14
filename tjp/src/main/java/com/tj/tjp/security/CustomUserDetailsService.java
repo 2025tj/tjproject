@@ -18,6 +18,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user= userRepository.findByEmail(email)
                 .orElseThrow(() ->
                     new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + email));
-        return UserPrincipal.create(user); // password 포함한 생성자
+
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new UsernameNotFoundException("비밀번호가 설정되지 않은 계정입니다. 마이페이지에서 연동 후 사용하세요.");
+        }
+
+        return new LocalUserPrincipal(user); // password 포함한 생성자
     }
 }

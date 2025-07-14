@@ -51,3 +51,6 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: trace  # ???? ?????? ???
     com.tj.tjp: DEBUG
     org.springframework.security: DEBUG
+
+frontend:
+  redirect-url: http://localhost:5173/oauth2/redirect

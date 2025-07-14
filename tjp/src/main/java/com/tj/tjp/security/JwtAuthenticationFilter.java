@@ -1,6 +1,7 @@
 package com.tj.tjp.security;
 
 import com.tj.tjp.entity.User;
+import com.tj.tjp.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -31,6 +32,7 @@ import static com.tj.tjp.util.CookieUtils.getRefreshToken;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -61,60 +63,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 token =header.substring(7);
             }
         }
-
-        log.info("[jwt필터] 추출한 토큰: {}", token);
-
         if (token != null) {
             try {
                 String email = jwtProvider.getEmailFromToken(token);
-                List<String> roles = jwtProvider.getRolesFromToken(token);
-                log.info("[jwt필터] 이메일: {}, 권한: {}", email, roles);
+//                List<String> roles = jwtProvider.getRolesFromToken(token);
+
+                User user = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을수 없음"));
 
                 // 인증 객체 설정
-                UserPrincipal userPrincipal = new UserPrincipal(
-                        email,
-                        null, // password는 인증에 필요 없음
-                        roles);
-
-//                List<GrantedAuthority> authorities = roles.stream()
-//                        .map(SimpleGrantedAuthority::new)
-//                        .collect(Collectors.toList());
-//                UserPrincipal userPrincipal = new UserPrincipal(
-//                        email,
-//                        List.of("ROLE_USER")
-//                );
+                LocalUserPrincipal principal = new LocalUserPrincipal(user);
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                                userPrincipal,
+                                principal,
                                 null,
-                                userPrincipal.getAuthorities());
-
+                                principal.getAuthorities()
+                        );
+//
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
                 logger.warn("JWT 검증 실패: " + e.getMessage());
             }
         }
-
-        // localStorage방식
-//        String header = request.getHeader("Authorization");
-//
-//        if (header != null && header.startsWith("Bearer")) {
-//            String token = header.substring(7);
-//            try {
-//                String email= jwtProvider.validateAndGetEmail(token);
-//
-//                UsernamePasswordAuthenticationToken authentication =
-//                        new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
-//
-//                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-//                SecurityContextHolder.getContext().setAuthentication(authentication);
-//            } catch (Exception e) {
-//                // 유효하지 않은 트큰이면 인증없이 넘어감
-//                logger.warn("JWT 검증 실패: "+e.getMessage());
-//            }
-//        }
         filterChain.doFilter(request, response);
     }
 }

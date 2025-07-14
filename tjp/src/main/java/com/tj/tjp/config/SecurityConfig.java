@@ -1,6 +1,6 @@
 package com.tj.tjp.config;
 
-import com.tj.tjp.security.CustomOAuth2FailureHandler;
+//import com.tj.tjp.security.CustomOAuth2FailureHandler;
 import com.tj.tjp.security.CustomOAuth2UserService;
 import com.tj.tjp.security.JwtAuthenticationFilter;
 import com.tj.tjp.security.OAuth2SuccessHandler;
@@ -29,7 +29,7 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
+//    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -61,7 +61,12 @@ public class SecurityConfig {
                                 .userService(customOAuth2UserService)
                         )
                         .successHandler(oAuth2SuccessHandler) // 토큰발급후 리디렉션
-                        .failureHandler(customOAuth2FailureHandler)
+//                        .failureHandler(customOAuth2FailureHandler)
+                )
+                .headers(headers -> headers
+                        .contentSecurityPolicy(policy -> policy
+                                .policyDirectives("default-src 'self'; script-src 'self'; object-src 'none';")
+                        )
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {

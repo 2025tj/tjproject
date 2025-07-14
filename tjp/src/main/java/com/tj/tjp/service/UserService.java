@@ -9,6 +9,7 @@ import com.tj.tjp.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -91,5 +92,17 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public void linkSocialAccount(String email, String provider) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
+
+        // 이미 연동된 경우 예외 처리
+        if (user.getProvider() != null) {
+            throw new IllegalArgumentException("이미 연동된 계정입니다.");
+        }
+        ProviderType providerType= ProviderType.from(provider);
+        user.updateProvider(providerType); // 혹은 연동 테이블을 두어 관계 맺기?
+        userRepository.save(user);
+    }
 
 }

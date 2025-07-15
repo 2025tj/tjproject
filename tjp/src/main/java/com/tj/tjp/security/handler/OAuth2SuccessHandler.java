@@ -32,7 +32,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     @PostConstruct
     public void init() {
-        this.frontendRedirectUrl = frontendProperties.getRedirectUrl();
+        this.frontendRedirectUrl = frontendProperties.getRedirectUrls().get("oauth2");
     }
 
     @Override

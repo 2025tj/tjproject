@@ -42,29 +42,28 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
             Optional<User> optionalUser = userRepository.findByEmail(email);
 
-            if (optionalUser.isPresent()) {
-                User user = optionalUser.get();
-
-                // ✅ 소셜 제공자 불일치 → 연동 가능 여부 체크
-                if (user.getProvider() != provider) {
-                    if (user.getProvider() == ProviderType.LOCAL) {
-                        log.warn("✅ LOCAL 계정 존재 → 연동 유도");
-                        return new LinkableOAuth2UserPrincipal(user, attributes);
-                    } else {
-                        log.warn("❌ 이미 다른 소셜로 연동됨 ({} → {})", user.getProvider(), provider);
-                        return new BlockedOAuth2UserPrincipal(user, attributes, "다른 소셜 계정으로 이미 연동되어 있습니다.");
-                    }
-                }
-
-                // ✅ 이미 해당 provider와 연동된 사용자
-                return new OAuth2UserPrincipal(user, attributes);
-            }
+//            if (optionalUser.isPresent()) {
+//                User user = optionalUser.get();
+//
+//                // ✅ 소셜 제공자 불일치 → 연동 가능 여부 체크
+//                if (user.getProvider() != provider) {
+//                    if (user.getProvider() == ProviderType.LOCAL) {
+//                        log.warn("✅ LOCAL 계정 존재 → 연동 유도");
+//                        return new LinkableOAuth2UserPrincipal(user, attributes);
+//                    } else {
+//                        log.warn("❌ 이미 다른 소셜로 연동됨 ({} → {})", user.getProvider(), provider);
+//                        return new BlockedOAuth2UserPrincipal(user, attributes, "다른 소셜 계정으로 이미 연동되어 있습니다.");
+//                    }
+//                }
+//
+//                // ✅ 이미 해당 provider와 연동된 사용자
+//                return new OAuth2UserPrincipal(user, attributes);
+//            }
 
             // db에 사용자 없으면 생성
             User newUser = userRepository.save(
                     User.builder()
                             .email(email)
-                            .provider(provider)
                             .roles(Set.of("ROLE_USER"))
                             .build()
             );

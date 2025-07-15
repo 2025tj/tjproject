@@ -18,7 +18,4 @@ public record SignupRequest(
     @NotBlank(message="닉네임을 입력하세요.")
     String nickname
 ) {
-    public ProviderType provider() {
-        return ProviderType.LOCAL;
-    }
 }

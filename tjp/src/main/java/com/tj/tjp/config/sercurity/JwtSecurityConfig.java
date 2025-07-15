@@ -24,7 +24,11 @@ public class JwtSecurityConfig {
                     //    - "/api/users/me" 경로는 인증된 사용자만 접근 허용
                     .requestMatchers("/api/users/me", "/api/users/pending-social-link").authenticated()
                     //    - "/api/auth/**" 및 "/api/users/**" 경로는 모두 허용 (회원가입·로그인 등)
-                    .requestMatchers("/api/auth/**", "/api/auth/signup").permitAll()
+                    .requestMatchers(
+                            "/api/auth/**",
+                            "/api/auth/signup",
+                            "/api/auth/verify"
+                    ).permitAll()
                     //    - 나머지 모든 요청은 인증 필요
                     .anyRequest().authenticated()
             )

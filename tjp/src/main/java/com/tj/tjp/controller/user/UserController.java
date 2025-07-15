@@ -1,9 +1,10 @@
 package com.tj.tjp.controller.user;
 
 import com.tj.tjp.dto.user.UpdateUserRequest;
+import com.tj.tjp.dto.user.UserUpdateResult;
 import com.tj.tjp.security.principal.AuthenticatedUser;
 import com.tj.tjp.security.jwt.JwtProvider;
-import com.tj.tjp.service.UserService;
+import com.tj.tjp.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,10 +29,10 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<?> updateUserInfo(@RequestBody UpdateUserRequest request, Authentication auth) {
+    public ResponseEntity<UserUpdateResult> updateUserInfo(@RequestBody UpdateUserRequest request, Authentication auth) {
         AuthenticatedUser user = (AuthenticatedUser) auth.getPrincipal();
-        userService.updateUserInfo(user.getEmail(), request);
-        return ResponseEntity.ok().build();
+        UserUpdateResult result = userService.updateUserInfo(user.getEmail(), request);
+        return ResponseEntity.ok(result);
     }
 
 //    @PostMapping("/link-social")

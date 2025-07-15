@@ -31,8 +31,8 @@ public class BlockedOAuth2UserPrincipal implements OAuth2User {
         return user.getEmail();
     }
 
-    public String getProvider() {
-        return user.getProvider().name(); // or .toString()가능? "GOOGLE" 등
-    }
+//    public String getProvider() {
+//        return user.getProvider().name(); // or .toString()가능? "GOOGLE" 등
+//    }
 
 }

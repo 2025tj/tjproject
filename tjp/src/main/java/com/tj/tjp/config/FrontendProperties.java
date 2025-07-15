@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter @Setter
 @Component
@@ -14,10 +15,13 @@ public class FrontendProperties {
     /**
      * application.yml에서
      * frontend:
+     *   redirect-urls:
+     *     - signup:
+     *     - oauth2:
      *   allowed-origins:
      *     - http://localhost:5173
      *     - https://domainaddress.com
      */
-    private String redirectUrl;
+    private Map<String, String> redirectUrls;
     private List<String> allowedOrigins;;
 }

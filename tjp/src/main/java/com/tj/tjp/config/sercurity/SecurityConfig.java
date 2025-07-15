@@ -1,7 +1,7 @@
 package com.tj.tjp.config.sercurity;
 
 //import com.tj.tjp.security.CustomOAuth2FailureHandler;
-import com.tj.tjp.security.service.CustomOAuth2UserService;
+//import com.tj.tjp.security.service.CustomOAuth2UserService;
 import com.tj.tjp.security.filter.JwtAuthenticationFilter;
 import com.tj.tjp.security.handler.OAuth2SuccessHandler;
 //import com.tj.tjp.security.OAuth2UserCumstomService;
@@ -27,7 +27,7 @@ public class SecurityConfig {
 
     private final Oauth2SecurityConfig oauth2SecurityConfig;
     private final JwtSecurityConfig jwtSecurityConfig;
-    private final CustomOAuth2UserService customOAuth2UserService;
+//    private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 //    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;

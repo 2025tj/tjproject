@@ -39,6 +39,18 @@ spring:
               - email
               - profile
 
+  mail:
+    host: smtp.gmail.com
+    port: 587 # 587(TLS), 465(SSL)
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
   port: 8080
 
@@ -50,9 +62,11 @@ logging:
     org.springframework.security: DEBUG
 
 frontend:
-  redirect-url: http://localhost:5173/oauth2/callback
+  redirect-urls:
+    signup: ${FRONTEND_BASE_URL}/email/verify
+    oauth2: ${FRONTEND_BASE_URL}/oauth2/callback
   allowed-origins:
-    - http://localhost:5173
+    - ${FRONTEND_BASE_URL}
 
 app:
   jwt:

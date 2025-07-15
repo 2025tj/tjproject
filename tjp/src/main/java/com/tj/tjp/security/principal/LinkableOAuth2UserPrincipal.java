@@ -12,7 +12,7 @@ public class LinkableOAuth2UserPrincipal extends OAuth2UserPrincipal {
     public boolean isLinkable() {
         return true;
     }
-    public ProviderType getProvider() {
-        return getUser().getProvider();
-    }
+//    public ProviderType getProvider() {
+//        return getUser().getProvider();
+//    }
 }

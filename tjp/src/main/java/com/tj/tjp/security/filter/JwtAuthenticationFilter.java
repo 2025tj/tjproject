@@ -1,6 +1,7 @@
 package com.tj.tjp.security.filter;
 
 import com.tj.tjp.entity.user.User;
+import com.tj.tjp.exception.EmailNotVerifiedException;
 import com.tj.tjp.repository.user.UserRepository;
 import com.tj.tjp.security.principal.LocalUserPrincipal;
 import com.tj.tjp.security.jwt.JwtProvider;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Component
@@ -57,6 +59,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // DB에서 사용자 정보 조회
                 User user = userRepository.findByEmail(email)
                         .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없음"));
+
+                // 이메일 미인증시 유예기간 체크
+                if (!user.isEmailVerified()) {
+                    LocalDateTime expireLimit = user.getCreatedAt().plusDays(7);
+                    if (LocalDateTime.now().isAfter(expireLimit)) {
+                        // 예외 던지면 아래 인증 로직 건너뜀 (권장!)
+                        throw new EmailNotVerifiedException("이메일 인증 유예기간이 만료되었습니다. 로그인 불가. 인증메일 재전송 필요");
+                    }
+                    // 유예기간 내라면 경고만 로그 등으로 남기고 로그인 허용
+                    // 경고 메세지 포함해서 내려줌(예: 헤더 or 바디)
+                }
 
                 // Spring Security 인증 객체 생성
                 LocalUserPrincipal principal = new LocalUserPrincipal(user);

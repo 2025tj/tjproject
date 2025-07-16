@@ -1,45 +1,102 @@
 package com.tj.tjp.controller;
 
-import com.tj.tjp.security.service.TokenService;
+import com.tj.tjp.dto.OneTimeLinkRequest;
+import com.tj.tjp.dto.SocialLinkInfo;
+import com.tj.tjp.dto.SocialLinkRequest;
+import com.tj.tjp.entity.user.User;
+import com.tj.tjp.exception.ResourceNotFoundException;
+import com.tj.tjp.security.principal.AuthenticatedUser;
+import com.tj.tjp.service.SocialAccountService;
 import com.tj.tjp.service.user.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.attribute.UserPrincipal;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/social")
 @RequiredArgsConstructor
 public class SocialLinkController {
 
+    private final SocialAccountService socialAccountService;
     private final UserService userService;
-    private final TokenService tokenService;
 
-    /**
-     * 프론트에서 소셜 연동 유도 시 사용자 정보 요청
-     */
-//    @GetMapping("/pending-social-link")
-//    public ResponseEntity<?> getPendingLink(Authentication auth) {
-//        if (auth == null || !(auth.getPrincipal() instanceof LinkableOAuth2UserPrincipal principal)) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("연동 대상이 아닙니다.");
-//        }
-//        return ResponseEntity.ok(Map.of(
-//                "email", principal.getEmail(),
-//                "provider", principal.getProvider().name().toLowerCase()
-//        ));
-//    }
+    @GetMapping("/pending-social-link")
+    public ResponseEntity<SocialLinkInfo> pendingLink(
+            @CookieValue(name = "oneTimeLink", required = false) String token
+    ) {
+        Optional<SocialLinkInfo> info = socialAccountService.getPendingLink(token);
+        return info
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
 
-    /**
-     * 사용자가 연동을 수락했을 때 실제 연동 처리 및 토큰 발급
-     */
-//    @PostMapping("/link-social")
-//    public ResponseEntity<?> link(@RequestBody SocialLinkRequest request, HttpServletResponse response) {
-//        // 연동 처리
-//        User user = userService.linkSocialAccount(request.email(), request.provider);
-//
-//        tokenService.issueAccessTokenHeader(response, user.getEmail(), user.getRoles().stream().toList());
-//        tokenService.issueRefreshTokenCookie(response, user.getEmail());
-//
-//        return ResponseEntity.ok(Map.of("message", "연동 완료"));
-//    }
-//
-//    public record SocialLinkRequest(String email, ProviderType provider) {}
+    @GetMapping("/pending-social-signup")
+    public ResponseEntity<SocialLinkInfo> pendingSignup(
+            @CookieValue(name = "oneTimeLink", required = false) String token
+    ) {
+        Optional<SocialLinkInfo> info = socialAccountService.getPendingSignup(token);
+        if (info.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        SocialLinkInfo data = info.get();
+        if (socialAccountService.existsLocalUserByEmail(data.email())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        return ResponseEntity.ok(data);
+    }
+
+    @PostMapping("/link")
+    public ResponseEntity<?> link(
+            @RequestBody OneTimeLinkRequest request,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        socialAccountService.linkWithEmailAndProvider(
+                principal.getUser(), request.email(), request.provider()
+        );
+        return ResponseEntity.ok("소셜 계정 연동 완료");
+    }
+
+    @DeleteMapping("/unlink/{provider}")
+    public ResponseEntity<Void> unlink(
+            @PathVariable String provider,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        socialAccountService.unlink(principal.getUser(), provider);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/linked-providers")
+    public ResponseEntity<List<String>> getLinkedProviders(@AuthenticationPrincipal AuthenticatedUser principal) {
+        List<String> providers = socialAccountService.getLinkedProviders(principal.getUser());
+        return ResponseEntity.ok(providers);
+    }
+
+    @PostMapping("/link-oauth2")
+    public ResponseEntity<Void> linkOAuth2(
+            @RequestBody @Valid SocialLinkRequest req,
+            @AuthenticationPrincipal AuthenticatedUser authUser
+    ) {
+        // 1) 현재 로그인된 User 엔티티 가져오기
+        User user = userService.findByEmail(authUser.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+
+        // 2) 서비스에 위임
+        socialAccountService.linkWithProviderId(
+                user,
+                req.getProvider(),
+                req.getProviderId()
+        );
+
+        return ResponseEntity.ok().build();
+    }
+
 }

@@ -50,7 +50,7 @@ public class User {
 
     @Column(name="status", nullable = false, length = 20)
     @Builder.Default
-    private String status = "ACTIVE"; // ACTIVE, INACTIVE, BLOCKED 등
+    private String status = UserStatus.ACTIVE.name(); // ACTIVE, INACTIVE, BLOCKED 등
 
     public void updatePassword(String password) {
         this.password = password;
@@ -65,8 +65,19 @@ public class User {
         this.emailVerifiedAt = LocalDateTime.now();
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    /** 사용자 활성화 처리 */
+    public void activate() {
+        this.status = UserStatus.ACTIVE.name();
+    }
+
+    /** 사용자 비활성화 처리 (예: 탈퇴) */
+    public void deactivate() {
+        this.status = UserStatus.INACTIVE.name();
+    }
+
+    /** 사용자 차단 처리 */
+    public void block() {
+        this.status = UserStatus.BLOCKED.name();
     }
 
     @PrePersist

@@ -1,9 +1,12 @@
 package com.tj.tjp.controller.auth;
 
+import com.tj.tjp.dto.UserDto;
 import com.tj.tjp.dto.auth.login.LoginRequest;
 import com.tj.tjp.dto.auth.login.LoginResult;
-import com.tj.tjp.dto.auth.singup.SignupRequest;
-import com.tj.tjp.security.service.AuthService;
+import com.tj.tjp.dto.auth.signup.SignupRequest;
+import com.tj.tjp.entity.user.User;
+import com.tj.tjp.security.principal.AuthenticatedUser;
+import com.tj.tjp.service.AuthService;
 import com.tj.tjp.security.service.TokenService;
 import com.tj.tjp.service.email.EmailVerificationService;
 import com.tj.tjp.service.user.UserService;
@@ -15,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -104,6 +108,31 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("인증에 실패했습니다: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> me(
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // principal 에서 User 엔티티 가져오기
+        User user = principal.getUser();
+
+        // DTO 로 변환
+        UserDto dto = UserDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .roles(user.getRoles())
+                .emailVerified(user.isEmailVerified())
+                .emailVerifiedAt(user.getEmailVerifiedAt())
+                .status(user.getStatus())
+                .build();
+
+        return ResponseEntity.ok(dto);
     }
 }
 

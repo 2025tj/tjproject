@@ -15,3 +15,9 @@ app:
     refresh-token-ttl: 604800000
     issuer: tjp-backend
     strategy: header
+
+  one-time-jwt:
+    # 소셜 연동용 일회용 토큰 전용 시크릿 키 (액세스·리프레시와 분리)
+    secret: your-32-byte-one-time-secret-key!!!!
+    # 일회용 토큰 만료 시간 (분 단위)
+    expiry-minutes: 10

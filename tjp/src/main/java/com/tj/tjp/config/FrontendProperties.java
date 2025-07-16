@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 @Getter @Setter
-@Component
 @ConfigurationProperties(prefix = "frontend")
 public class FrontendProperties {
     /**
@@ -23,5 +22,5 @@ public class FrontendProperties {
      *     - https://domainaddress.com
      */
     private Map<String, String> redirectUrls;
-    private List<String> allowedOrigins;;
+    private List<String> allowedOrigins;
 }

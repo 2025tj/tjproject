@@ -5,6 +5,7 @@ import com.tj.tjp.event.EmailVerificationResendEvent;
 import com.tj.tjp.exception.EmailNotVerifiedException;
 import com.tj.tjp.repository.user.UserRepository;
 import com.tj.tjp.security.principal.AuthenticatedUser;
+import com.tj.tjp.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,6 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AuthServiceTest {

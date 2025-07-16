@@ -1,13 +1,12 @@
 package com.tj.tjp.service.user;
 
-import com.tj.tjp.dto.auth.singup.SignupRequest;
+import com.tj.tjp.dto.auth.signup.SignupRequest;
 import com.tj.tjp.dto.user.UpdateUserRequest;
 import com.tj.tjp.dto.user.UserUpdateResult;
 import com.tj.tjp.entity.user.User;
 import com.tj.tjp.event.UserSignupEvent;
 import com.tj.tjp.exception.EmailNotVerifiedException;
 import com.tj.tjp.repository.user.UserRepository;
-import com.tj.tjp.service.email.EmailVerificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -29,16 +29,16 @@ public class UserService {
 
     @Transactional
     public Long signup(SignupRequest dto) {
-        if (userRepository.findByEmail(dto.email()).isPresent()) {
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
-        if (userRepository.findByNickname(dto.nickname()).isPresent()) {
+        if (userRepository.findByNickname(dto.getNickname()).isPresent()) {
             throw new IllegalArgumentException("이미 사용중인 닉네임입니다.");
         }
         User user= User.builder()
-                .email(dto.email())
-                .password(passwordEncoder.encode(dto.password()))
-                .nickname(dto.nickname())
+                .email(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .nickname(dto.getNickname())
                 .roles(Set.of("ROLE_USER"))
                 .build();
         Long id = userRepository.save(user).getId();
@@ -84,28 +84,12 @@ public class UserService {
         user.updatePassword(passwordEncoder.encode(rawPassword));
     }
 
-//    public void linkSoicalAccount(String email, ProviderType provider) {
-//        User user = userRepository.findByEmail(email)
-//                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-//
-//        if (user.getProvider() != ProviderType.LOCAL) {
-//            throw new IllegalStateException("이미 소셜 연동된 계정입니다.");
-//        }
-//
-//        user.updateProvider(provider);
-//        userRepository.save(user);
-//    }
-
-//    public User linkSocialAccount(String email, ProviderType provider) {
-//        User user = userRepository.findByEmail(email)
-//                .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
-//
-//        // 이미 연동된 경우 예외 처리
-//        if (user.getProvider() != null) {
-//            throw new IllegalArgumentException("이미 연동된 계정입니다.");
-//        }
-//        user.updateProvider(provider); // 혹은 연동 테이블을 두어 관계 맺기?
-//        return userRepository.save(user);
-//    }
-
+    /**
+     * 이메일로 User 엔티티를 조회합니다.
+     * @param email 조회할 이메일
+     * @return User Optional
+     */
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 }

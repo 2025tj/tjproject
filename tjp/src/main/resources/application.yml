@@ -34,7 +34,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/oauth2/callback/{registrationId}"
+            redirect-uri: "{baseUrl}/oauth2/login/{registrationId}"
             scope:
               - email
               - profile
@@ -64,7 +64,9 @@ logging:
 frontend:
   redirect-urls:
     signup: ${FRONTEND_BASE_URL}/email/verify
-    oauth2: ${FRONTEND_BASE_URL}/oauth2/callback
+    oauth2-login: ${FRONTEND_BASE_URL}/
+    oauth2-link: ${FRONTEND_BASE_URL}/oauth2/link/{registrationId}
+    oauth2-signup: ${FRONTEND_BASE_URL}/oauth2/signup/{registrationId}
   allowed-origins:
     - ${FRONTEND_BASE_URL}
 
@@ -80,3 +82,12 @@ app:
     issuer: tjp-backend
     # (선택) 필터 전략: header, cookie, hybrid 중 하나
     strategy: header
+
+  one-time-jwt:
+    # 일회용 링크 토큰 전용 시크릿 키 (액세스·리프레시와는 별도)
+    secret: ${ONE_TIME_JWT_SECRET_KEY}
+    # 일회용 링크 토큰 만료 시간(분 단위)
+    expiry-minutes: 10
+
+  auth:
+    verification-grace-minutes: 10080

@@ -96,7 +96,7 @@ class EmailVerificationServiceTest {
                 .findFirst().orElseThrow();
 
         // 토큰을 만료시각으로 조작
-        token.setExpiredAt(token.getExpiredAt().minusDays(2));
+        token.extendExpiry(token.getExpiredAt().minusDays(2));
         tokenRepository.save(token);
 
         assertThrows(IllegalStateException.class, () -> {

@@ -1,47 +1,140 @@
-//package com.tj.tjp.security;
+package com.tj.tjp.security.handler;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tj.tjp.config.FrontendProperties;
+import com.tj.tjp.exception.OAuth2LinkRequiredException;
+import com.tj.tjp.exception.OAuth2SignupRequiredException;
+import com.tj.tjp.security.jwt.OneTimeLinkCookieProvider;
+import com.tj.tjp.security.jwt.OneTimeTokenProvider;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Map;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler {
+
+    private final FrontendProperties frontendProps;
+    private final OneTimeLinkCookieProvider cookieProvider;
+
+    @Override
+    public void onAuthenticationFailure(HttpServletRequest req,
+                                        HttpServletResponse res,
+                                        AuthenticationException ex) throws IOException {
+
+        // 1) LINK_REQUIRED 예외
+        if (ex instanceof OAuth2LinkRequiredException linkEx) {
+            issueOneTimeLink(res, linkEx.getEmail(), linkEx.getProvider());
+            String url = frontendProps.getRedirectUrls().get("oauth2-link")
+                    .replace("{registrationId}", linkEx.getProvider());
+            res.sendRedirect(url);
+            return;
+        }
+
+        // 2) SIGNUP_REQUIRED 예외
+        if (ex instanceof OAuth2SignupRequiredException signEx) {
+            issueOneTimeLink(res, signEx.getEmail(), signEx.getProvider());
+            String url = frontendProps.getRedirectUrls().get("oauth2-signup")
+                    .replace("{registrationId}", signEx.getProvider());
+            res.sendRedirect(url);
+            return;
+        }
+
+//        // 3) 나머지 에러
+//        res.sendRedirect(frontendProps.getRedirectUrls().get("login") + "?error");
+    }
+
+    private void issueOneTimeLink(HttpServletResponse res, String email, String provider) {
+        ResponseCookie cookie = cookieProvider.createOneTimeLinkCookie(email, provider);
+        res.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+
+
+
+
+
+//        // 1) 기본 HTTP 상태 401 설정
+//        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 //
-//import jakarta.servlet.ServletException;
-//import jakarta.servlet.http.HttpServletRequest;
-//import jakarta.servlet.http.HttpServletResponse;
-//import lombok.extern.slf4j.Slf4j;
-//import org.springframework.security.core.AuthenticationException;
-//import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-//import org.springframework.stereotype.Component;
+//        // 2) 예외 타입에 따라 에러 코드 식별
+//        String errorCode = "OAUTH2_ERROR";
+//        if (exception instanceof OAuth2AuthenticationException oauthEx &&
+//                oauthEx.getError() != null) {
+//            errorCode = oauthEx.getError().getErrorCode();
+//        }
+//        String message = exception.getMessage();
 //
-//import java.io.IOException;
-//import java.net.URLEncoder;
-//import java.nio.charset.StandardCharsets;
-//
-//@Slf4j
-//@Component
-//public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler {
-//
-//    @Override
-//    public void onAuthenticationFailure(HttpServletRequest request,
-//                                        HttpServletResponse response,
-//                                        AuthenticationException exception) throws IOException, ServletException {
-//        log.warn("OAuth2 로그인 실패: {}", exception.getMessage());
-//
-//        String rawMessage = exception.getMessage();
-//        String errorMessage = URLEncoder.encode(rawMessage, StandardCharsets.UTF_8);
-//
-//        //이메일과 provider추출(정규표현식)
-//        String email=null;
-//        String provider=null;
-//        try {
-//            var emailMatcher = java.util.regex.Pattern.compile("\\[email=(.*?)]").matcher(rawMessage);
-//            if (emailMatcher.find()) email = URLEncoder.encode(emailMatcher.group(1), StandardCharsets.UTF_8);
-//
-//            var providerMatcher = java.util.regex.Pattern.compile("\\[provider=(.*?)]").matcher(rawMessage);
-//            if (providerMatcher.find()) provider = URLEncoder.encode(providerMatcher.group(1), StandardCharsets.UTF_8);
-//        } catch (Exception e) {
-//            log.warn("OAuth2 로그인 에러 메세지 파싱 실패: {}", e.getMessage());
+//        // 3) LINK_REQUIRED인 경우, 프론트의 계정 연동 페이지로 리다이렉트
+//        if ("LINK_REQUIRED".equals(errorCode)) {
+//            // LINK_REQUIRED 메시지에서 email/provider 파싱
+//            String email = extractEmailFromMessage(message);
+//            String provider = extractProviderFromMessage(message);
+//            try {
+//                issueOneTimeLink(response, email, provider);
+//            } catch (IOException ioe) {
+//                log.error("리다이렉트 처리 중 오류", ioe);
+//                // 리다이렉트 실패 시 JSON 폴백
+//                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+//                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+//                objectMapper.writeValue(response.getWriter(), Map.of(
+//                        "status",  "REDIRECT_ERROR",
+//                        "message", "연동 페이지로 이동 중 오류가 발생했습니다."
+//                ));
+//            }
+//            return;
 //        }
 //
-//        String redirectUrl = "/oauth2/redirect?error="+errorMessage;
-//        if (email !=null) redirectUrl += "&email="+email;
-//        if (provider !=null) redirectUrl += "&provider="+provider;
-//
-//        response.sendRedirect(redirectUrl);
+//        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+//        objectMapper.writeValue(response.getWriter(), Map.of(
+//                "status", errorCode,
+//                "message", message
+//        ));
 //    }
-//}
+//
+//    // LINK_REQUIRED 메시지에서 email 파싱
+//    private String extractEmailFromMessage(String message) {
+//        String detail  = message.substring(message.indexOf(':') + 1).trim();
+//        return detail.split("\\s+")[0];
+//    }
+//
+//    // LINK_REQUIRED 메시지에서 provider 파싱
+//    private String extractProviderFromMessage(String message) {
+//        String detail  = message.substring(message.indexOf(':') + 1).trim();
+//        String provider = detail.split("\\s+")[1];
+//        return provider.replaceAll("[()]", "");
+//    }
+//
+//    private void issueOneTimeLink(HttpServletResponse res, String email, String provider) throws IOException {
+//        // 1) 토큰 생성
+//        String token = otpProvider.createToken(email, provider);
+//        // 2) HttpOnly 쿠키 세팅
+//        ResponseCookie cookie = ResponseCookie.from("oneTimeLink", token)
+//                .httpOnly(true)
+//                .secure(true)
+//                .path("/oauth2/link")
+//                .maxAge(Duration.ofMinutes(10))
+//                .sameSite("Lax")
+//                .build();
+//        res.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+//
+//        // 3) 프론트 연동 페이지로 리다이렉트
+//        // 예: https://frontend.com/oauth2/link?email={email}&provider={provider}
+//        String linkUrl = frontendProperties.getRedirectUrls().get("oauth2-link");
+//        res.sendRedirect(linkUrl);
+//    }
+}

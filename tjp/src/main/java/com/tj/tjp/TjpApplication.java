@@ -20,21 +20,36 @@ public class TjpApplication {
 				.ignoreIfMissing()
 				.load();
 
+		//DataBase
 		String dbUrl = dotenv.get("DB_URL");
 		String dbUsername = dotenv.get("DB_USERNAME");
 		String dbPassword = dotenv.get("DB_PASSWORD");
+
+		//OAuth2
 		String googleClientId = dotenv.get("GOOGLE_CLIENT_ID");
 		String googleClientSecret = dotenv.get("GOOGLE_CLIENT_SECRET");
+
+		//Jwt
 		String jwtSecretKey = dotenv.get("JWT_SECRET_KEY");
+		String oneTimeJwtSecretKey = dotenv.get("ONE_TIME_JWT_SECRET_KEY");
+
+		//Frontend
+		String frontendBaseUrl = dotenv.get("FRONTEND_BASE_URL");
+
+		//Mail
+		String mailUsername = dotenv.get("MAIL_USERNAME");
+		String mailPassword = dotenv.get("MAIL_PASSWORD");
 
 		System.setProperty("DB_URL", dbUrl);
 		System.setProperty("DB_USERNAME", dbUsername);
 		System.setProperty("DB_PASSWORD", dbPassword);
-
 		System.setProperty("GOOGLE_CLIENT_ID", googleClientId);
 		System.setProperty("GOOGLE_CLIENT_SECRET", googleClientSecret);
-
 		System.setProperty("JWT_SECRET_KEY", jwtSecretKey);
+		System.setProperty("FRONTEND_BASE_URL", frontendBaseUrl);
+		System.setProperty("MAIL_USERNAME", mailUsername);
+		System.setProperty("MAIL_PASSWORD", mailPassword);
+		System.setProperty("ONE_TIME_JWT_SECRET_KEY", oneTimeJwtSecretKey);
 
 		SpringApplication.run(TjpApplication.class, args);
 		System.out.print("Hello tj!");

@@ -95,7 +95,7 @@ public class EmailVerificationService {
         userRepository.save(user);
 
         // 4. 토큰 사용 처리 (1회성)
-        emailVerificationToken.setUsed(true);
+        emailVerificationToken.markUsed(true);
         tokenRepository.save(emailVerificationToken);
     }
 }

@@ -1,17 +1,25 @@
 package com.tj.tjp.security.service;
 
 import com.tj.tjp.entity.user.ProviderType;
+import com.tj.tjp.entity.user.SocialAccount;
 import com.tj.tjp.entity.user.User;
+import com.tj.tjp.exception.OAuth2LinkRequiredException;
+import com.tj.tjp.exception.OAuth2SignupRequiredException;
+import com.tj.tjp.repository.user.SocialAccountRepository;
 import com.tj.tjp.repository.user.UserRepository;
 import com.tj.tjp.security.principal.BlockedOAuth2UserPrincipal;
 import com.tj.tjp.security.principal.LinkableOAuth2UserPrincipal;
 import com.tj.tjp.security.principal.OAuth2UserPrincipal;
+import com.tj.tjp.service.SocialAccountService;
 import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -23,59 +31,51 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
-    private final UserRepository userRepository;
 
+    private final @Lazy SocialAccountService socialAccountService;
+
+    @Transactional
     @Override
     public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
-        try {
-            OAuth2User oAuth2User = super.loadUser(request);
-            Map<String, Object> attributes = oAuth2User.getAttributes();
+        // 1) super.loadUser를 통해 액세스 토큰으로 프로바이더 사용자 정보(CLAIMS 포함) 조회
+        OAuth2User oAuth2User = super.loadUser(request);
 
-            String providerName = request.getClientRegistration().getRegistrationId(); // e.g., google, kakao
-            ProviderType provider = ProviderType.from(providerName);
+        // 2) 프로바이더 ID(google, kakao 등)와 전달 받은 속성(attributes) 확보
+        String provider = request.getClientRegistration().getRegistrationId(); // google, kakao, etc
+        Map<String, Object> attrs = oAuth2User.getAttributes();
 
-            String email = (String) attributes.get("email");
-            if (email == null || email.isBlank()) {
-                log.warn("[OAuth2UserService] 소셜 로그인에 이메일 정보 없음 → 차단");
-                throw new OAuth2AuthenticationException("이메일이 제공되지 않았습니다.");
-            }
+        // 3) 이메일은 필수 값으로, 스코프에 포함되어 있지 않으면 예외 처리
+        String email = Optional.ofNullable((String) attrs.get("email"))
+                .filter(e -> !e.isBlank())
+                .orElseThrow(() -> new OAuth2AuthenticationException(
+                        new OAuth2Error("EMAIL_NOT_FOUND", "이메일이 제공되지 않았습니다.", null)
+                ));
 
-            Optional<User> optionalUser = userRepository.findByEmail(email);
+        // 4) 각 프로바이더별 고유 식별자(providerId) 추출 로직 위임
+        String providerId = socialAccountService.extractProviderId(provider, attrs);
 
-//            if (optionalUser.isPresent()) {
-//                User user = optionalUser.get();
-//
-//                // ✅ 소셜 제공자 불일치 → 연동 가능 여부 체크
-//                if (user.getProvider() != provider) {
-//                    if (user.getProvider() == ProviderType.LOCAL) {
-//                        log.warn("✅ LOCAL 계정 존재 → 연동 유도");
-//                        return new LinkableOAuth2UserPrincipal(user, attributes);
-//                    } else {
-//                        log.warn("❌ 이미 다른 소셜로 연동됨 ({} → {})", user.getProvider(), provider);
-//                        return new BlockedOAuth2UserPrincipal(user, attributes, "다른 소셜 계정으로 이미 연동되어 있습니다.");
-//                    }
-//                }
-//
-//                // ✅ 이미 해당 provider와 연동된 사용자
-//                return new OAuth2UserPrincipal(user, attributes);
-//            }
-
-            // db에 사용자 없으면 생성
-            User newUser = userRepository.save(
-                    User.builder()
-                            .email(email)
-                            .roles(Set.of("ROLE_USER"))
-                            .build()
-            );
-
-            return new OAuth2UserPrincipal(newUser, attributes);
-
-        } catch (OAuth2AuthenticationException e) {
-            log.error("❌ OAuth2 인증 오류: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("❌ 사용자 정보 로딩 중 예외 발생: {}", e.getMessage(), e);
-            return new BlockedOAuth2UserPrincipal(null, Map.of(), "사용자 정보 로딩 중 오류 발생");
+        // 5) 이미 연동된 소셜 계정이 있는지 확인 -> 로그인
+        if (socialAccountService.existsByProviderAndProviderId(provider, providerId)) {
+            // 기존 소셜 계정과 연결된 로컬 사용자 정보를 조회
+            User user = socialAccountService.findUserByProviderAndProviderId(provider, providerId);
+            // 즉시 로그인 처리
+            return new OAuth2UserPrincipal(user, attrs);
         }
+
+        // 6) 소셜 계정 연동 기록이 없지만 동일한 이메일의 로컬 계정이 있으면 -> 연동 필요 예외
+        if (socialAccountService.existsLocalUserByEmail(email)) {
+            // 보안을 위해 단순 자동 연동 대신, 사용자 확인(로컬 로그인)을 유도하는 예외 발생
+            throw new OAuth2LinkRequiredException(email, provider);
+        }
+
+        // 3) 완전 신규 사용자 → “회원가입 필요” 예외
+        throw new OAuth2SignupRequiredException(email, provider);
+
+//        // 7) 신규 가입 및 소셜 계정 정보 저장
+//        User newUser = socialAccountService.registerSocialUser(email);
+//        socialAccountService.linkIfAbsent(newUser, provider, attrs);
+//
+//        // 8) 최종 로그인 처리 (JWT 발급은 SuccessHandler에서)
+//        return new OAuth2UserPrincipal(newUser, attrs);
     }
 }

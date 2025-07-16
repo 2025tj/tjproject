@@ -3,19 +3,30 @@ package com.tj.tjp.config.sercurity;
 //import com.tj.tjp.security.CustomOAuth2FailureHandler;
 //import com.tj.tjp.security.service.CustomOAuth2UserService;
 import com.tj.tjp.security.filter.JwtAuthenticationFilter;
-import com.tj.tjp.security.handler.OAuth2SuccessHandler;
+import com.tj.tjp.security.handler.CustomOAuth2FailureHandler;
+import com.tj.tjp.security.handler.CustomOAuth2SuccessHandler;
 //import com.tj.tjp.security.OAuth2UserCumstomService;
+import com.tj.tjp.security.service.CustomOAuth2UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -25,55 +36,99 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 public class SecurityConfig {
 
-    private final Oauth2SecurityConfig oauth2SecurityConfig;
-    private final JwtSecurityConfig jwtSecurityConfig;
-//    private final CustomOAuth2UserService customOAuth2UserService;
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+//    private final Oauth2SecurityConfig oauth2SecurityConfig;
+//    private final JwtSecurityConfig jwtSecurityConfig;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-//    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
+    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // jwt 설정
-        jwtSecurityConfig.configureJwt(http);
-
-        //Oauth2 설정
-        oauth2SecurityConfig.configureOauth2(http);
 
         // 공통 예외 처리, csrf, cors 등
         http
-                // cors
-                .cors(withDefaults())
+            // cors
+            .cors(withDefaults())
+            // csrf
+            .csrf(CsrfConfigurer::disable) // csrf 비활성화
+            // 엔드포인트별 권한 설정
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                //    - "/api/users/me" 경로는 인증된 사용자만 접근 허용
+                .requestMatchers("/api/users/me", "/api/users/pending-social-link").authenticated()
+                //    - "/api/auth/**" 및 "/api/users/**" 경로는 모두 허용 (회원가입·로그인 등)
+                .requestMatchers(
+                        "/oauth2/**",
+                        "/api/auth/**",
+                        "/api/auth/signup",
+                        "/api/auth/verify",
+                        "/api/social/**"
+                ).permitAll()
+                //    - 나머지 모든 요청은 인증 필요
+                .anyRequest().authenticated()
+        );
 
-                // csrf
-                .csrf(csrf -> csrf.disable()) // csrf 비활성화
+        // jwt 설정
+        // 세션 관리 설정: 세션을 사용하지 않고 JWT 기반 무상태(stateless)로 처리
+        http.sessionManagement(sm -> sm
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // JWT 인증 필터 등록
+            // - UsernamePasswordAuthenticationFilter 전에 실행되어
+            //   요청 헤더(또는 쿠키)에서 토큰을 추출하고 검증함
+            .addFilterBefore(
+                jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class);
 
-                .exceptionHandling(exc -> exc
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            // 1) HTTP 상태 401 (Unauthorized)
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        //Oauth2 설정
+        // OAuth2 로그인 기능 활성화
+        http.oauth2Login(oauth2 -> oauth2
+            // 1) 사용자 인증 요청을 보낼 엔드포인트 설정
+            .authorizationEndpoint(auth -> auth
+                    // 클라이언트가 /oauth2/authorization/{provider}로 요청
+                    .baseUri("/oauth2/authorization")
+            )
+            // 2) 인증 후 리디렉션을 받을 엔드포인트 설정
+            .redirectionEndpoint(redir -> redir
+                    // 예: /oauth2/callback/google
+                    .baseUri("/oauth2/login/*")
+            )
+            // 3) OAuth2 프로바이더에서 사용자 정보 가져올 서비스 등록
+            .userInfoEndpoint(ui -> ui
+                    .userService(customOAuth2UserService)
+            )
+            // 4) 로그인 성공 후 핸들러 등록
+            .successHandler(customOAuth2SuccessHandler)
+            // 5) 로그인 실패 시 핸들러 등록 (필요 시 사용)
+            .failureHandler(customOAuth2FailureHandler)
+        );
 
-                            // 2) 응답을 JSON으로
-                            response.setContentType("application/json");
-                            response.setCharacterEncoding("UTF-8");
+        //예외처리
+        http.exceptionHandling(exc -> exc
+            .authenticationEntryPoint((request, response, authException) -> {
+                // 1) HTTP 상태 401 (Unauthorized)
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-                            // 3) CORS 요구사항 (React 개발 서버에 허용)
-                            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
-                            response.setHeader("Access-Control-Allow-Credentials", "true");
+                // 2) 응답을 JSON으로
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
 
-                            // 4) 바디에 에러 메시지 쓰기
-                            response.getWriter().write("{\"error\":\"Unauthorized\"}");
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            log.warn("인증되지 않은 요청: {}", request.getRequestURI());
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json");
-                            response.setCharacterEncoding("UTF-8");
-                            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
-                            response.setHeader("Access-Control-Allow-Credentials", "true");
-                            response.getWriter().write("{\"error\":\"Access Denied\"}");
-                        })
-                );
+                // 3) CORS 요구사항 (React 개발 서버에 허용)
+                response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+                response.setHeader("Access-Control-Allow-Credentials", "true");
+
+                // 4) 바디에 에러 메시지 쓰기
+                response.getWriter().write("{\"error\":\"Unauthorized\"}");
+            })
+            .accessDeniedHandler((request, response, accessDeniedException) -> {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+                response.setHeader("Access-Control-Allow-Credentials", "true");
+                response.getWriter().write("{\"error\":\"Access Denied\"}");
+            })
+        );
 
         return http.build();
     }
@@ -94,5 +149,24 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:5173")); // 또는 프론트 주소
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Access-Token", "Refresh-Token"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+    @Bean
+    public DefaultOAuth2UserService defaultOAuth2UserService() {
+        return new DefaultOAuth2UserService();
     }
 }

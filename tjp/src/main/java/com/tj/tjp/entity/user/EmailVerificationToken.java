@@ -42,20 +42,22 @@ public class EmailVerificationToken {
     /**
      * 사용 여부 (1회용: true면 이미 사용된 토큰)
      */
+    @Builder.Default
     @Column(nullable = false)
     private boolean used = false; // 1회성
 
     /**
      * 토큰 사용 처리 (used → true)
      */
-    public void setUsed(boolean used) {
+    public void markUsed(boolean used) {
         this.used = used;
     }
 
     /**
      * 만료 시각 재설정 (재발급 등 필요시)
+     * @param expiredAt 새 만료 시각
      */
-    public void setExpiredAt(LocalDateTime expiredAt) {
+    public void extendExpiry(LocalDateTime expiredAt) {
         this.expiredAt = expiredAt;
     }
 }

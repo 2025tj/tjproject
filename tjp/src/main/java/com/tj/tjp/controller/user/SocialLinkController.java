@@ -1,26 +1,17 @@
-package com.tj.tjp.controller;
+package com.tj.tjp.controller.user;
 
-import com.tj.tjp.dto.OneTimeLinkRequest;
-import com.tj.tjp.dto.SocialLinkInfo;
-import com.tj.tjp.dto.SocialLinkRequest;
+import com.tj.tjp.dto.social.SocialLinkRequest;
 import com.tj.tjp.entity.user.User;
-import com.tj.tjp.exception.ResourceNotFoundException;
 import com.tj.tjp.security.principal.AuthenticatedUser;
 import com.tj.tjp.service.SocialAccountService;
 import com.tj.tjp.service.user.UserService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.attribute.UserPrincipal;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -30,6 +21,28 @@ public class SocialLinkController {
 
     private final SocialAccountService socialAccountService;
     private final UserService userService;
+
+    /**
+     * 소셜 계정 연동 (UserController에서 이동)
+     */
+    @PostMapping("/link")
+    public ResponseEntity<Void> linkSocial(
+            @RequestBody SocialLinkRequest req,
+            @AuthenticationPrincipal AuthenticatedUser authUser
+    ) {
+        // 1) 현재 로그인된 User 엔티티 가져오기
+        User user = userService.findByEmail(authUser.getEmail())
+                .orElseThrow();
+
+        // 2) 서비스에 위임
+        socialAccountService.linkSocialAccount(
+                user,
+                req.getProvider(),
+                req.getProviderId()
+        );
+
+        return ResponseEntity.ok().build();
+    }
 
     /**
      * 소셜 계정 연동 해제

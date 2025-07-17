@@ -1,31 +1,22 @@
 package com.tj.tjp.service;
 
-import com.tj.tjp.dto.SocialLinkInfo;
 import com.tj.tjp.entity.user.SocialAccount;
 import com.tj.tjp.entity.user.User;
 import com.tj.tjp.exception.ResourceNotFoundException;
 import com.tj.tjp.repository.user.SocialAccountRepository;
 import com.tj.tjp.repository.user.UserRepository;
 import com.tj.tjp.security.jwt.OneTimeTokenProvider;
-import com.tj.tjp.security.oauth.strategy.OAuth2ProviderStrategy;
+import com.tj.tjp.security.oauth2.strategy.OAuth2ProviderStrategy;
 import io.jsonwebtoken.JwtException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 
 @Slf4j

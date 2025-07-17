@@ -1,26 +1,19 @@
 package com.tj.tjp.security.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tj.tjp.config.FrontendProperties;
-import com.tj.tjp.exception.OAuth2LinkRequiredException;
+import com.tj.tjp.config.properties.FrontendProperties;
 import com.tj.tjp.exception.OAuth2SignupRequiredException;
 import com.tj.tjp.security.jwt.OneTimeLinkCookieProvider;
-import com.tj.tjp.security.jwt.OneTimeTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
 
 @Slf4j
 @Component

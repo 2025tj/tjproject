@@ -1,12 +1,11 @@
 package com.tj.tjp.service.email;
 
-import com.tj.tjp.config.FrontendProperties;
+import com.tj.tjp.config.properties.FrontendProperties;
 import com.tj.tjp.entity.user.EmailVerificationToken;
 import com.tj.tjp.entity.user.User;
 import com.tj.tjp.repository.user.EmailVerificationTokenRepository;
 import com.tj.tjp.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

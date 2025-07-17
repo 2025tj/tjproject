@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
@@ -58,7 +59,7 @@ class EmailVerificationServiceTest {
         emailVerificationService.sendVerificationEmail(user);
 
         // 메일 발송이 실제로 호출됐는지 Mock으로 검증
-        verify(mailSenderService, atLeastOnce()).send(anyString(), anyString(), anyString());
+        verify(mailSenderService, atLeastOnce()).send(anyString(), anyString(), anyString(), anyBoolean());
 
         // 토큰이 DB에 저장되었는지 검증
         EmailVerificationToken tokenEntity = tokenRepository.findAll().stream()

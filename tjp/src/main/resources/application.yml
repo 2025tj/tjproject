@@ -70,6 +70,7 @@ frontend:
     oauth2-link-complete: ${FRONTEND_BASE_URL}/mypage
     oauth2-link: ${FRONTEND_BASE_URL}/oauth2/link/{registrationId}
     oauth2-signup: ${FRONTEND_BASE_URL}/oauth2/signup/{registrationId}
+    error: ${FRONTEND_BASE_URL}/error
   allowed-origins:
     - ${FRONTEND_BASE_URL}
 
@@ -92,5 +93,14 @@ app:
     # 일회용 링크 토큰 만료 시간(분 단위)
     expiry-minutes: 10
 
+  oauth2:
+    state:
+      secret-key: ${OAUTH2_STATE_SECRET_KEY}
+      expiry-minutes: 5
+
   auth:
     verification-grace-minutes: 10080
+
+#  crypto:
+#    secret-key: ${CRYPTO_SECRET_KEY}
+

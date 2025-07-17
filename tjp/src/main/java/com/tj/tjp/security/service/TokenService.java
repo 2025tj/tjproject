@@ -1,10 +1,8 @@
 package com.tj.tjp.security.service;
 
-import com.tj.tjp.config.FrontendProperties;
+import com.tj.tjp.config.properties.FrontendProperties;
 import com.tj.tjp.security.jwt.JwtProvider;
 import com.tj.tjp.util.TokenUtils;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;

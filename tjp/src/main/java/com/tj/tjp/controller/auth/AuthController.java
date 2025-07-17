@@ -1,5 +1,6 @@
 package com.tj.tjp.controller.auth;
 
+import com.tj.tjp.dto.common.ApiResponse;
 import com.tj.tjp.dto.user.UserResponse;
 import com.tj.tjp.dto.auth.login.LoginRequest;
 import com.tj.tjp.dto.auth.login.LoginResult;
@@ -11,6 +12,8 @@ import com.tj.tjp.security.service.TokenService;
 import com.tj.tjp.service.email.EmailVerificationService;
 import com.tj.tjp.service.user.UserService;
 import com.tj.tjp.util.TokenUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Tag(name = "Authentication", description = "인증 관련 API")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -32,108 +36,67 @@ public class AuthController {
     private final TokenService tokenService;
     private final EmailVerificationService emailVerificationService;
 
+    @Operation(summary = "회원가입", description = "새로운 사용자를 등록합니다.")
     @PostMapping("/signup")
-    public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
+    public ResponseEntity<ApiResponse<Long>> signup(@RequestBody @Valid SignupRequest request) {
         Long userId = userService.signup(request);
-        return ResponseEntity.ok("회원가입 성공. userId: " + userId);
+        return ResponseEntity.ok(ApiResponse.success("회원가입이 완료되었습니다.", userId));
     }
 
+    @Operation(summary = "로그인", description = "사용자 인증을 수행합니다.")
     @PostMapping("/login")
-    public ResponseEntity<LoginResult> loginLocal(
+    public ResponseEntity<ApiResponse<LoginResult>> loginLocal(
             @RequestBody @Valid LoginRequest request,
             HttpServletResponse response
     ) {
         LoginResult result = authService.login(request.email(), request.password(), response);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success("로그인이 완료되었습니다.", result));
     }
 
+    @Operation(summary = "토큰 갱신", description = "액세스 토큰을 갱신합니다.")
     @PostMapping("/refresh")
-    public ResponseEntity<Map<String,String>> refresh(
+    public ResponseEntity<ApiResponse<Void>> refresh(
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        try {
-            tokenService.refreshAccessToken(request, response);
-            return ResponseEntity.ok(Map.of("message", "토큰 재발급 성공"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        tokenService.refreshAccessToken(request, response);
+        return ResponseEntity.ok(ApiResponse.success("토큰 갱신이 완료되었습니다."));
     }
 
+
+    @Operation(summary = "로그아웃", description = "사용자 로그아웃을 수행합니다.")
     @PostMapping("/logout")
-    public ResponseEntity<Map<String,String>> logout(HttpServletResponse response) {
-        // refreshToken 쿠키 삭제 (name은 실제 발급명과 동일해야 함)
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(true) // 운영 환경에서만 true!
+                .secure(true)
                 .path("/")
                 .maxAge(0)
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
-        return ResponseEntity.ok(Map.of("message", "로그아웃 성공"));
+        return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다."));
     }
 
     /**
      * 로컬 accessToken 검증용 (서버 서명·유효기간·블랙리스트 검사)
      */
+    @Operation(summary = "토큰 검증", description = "액세스 토큰의 유효성을 검증합니다.")
     @GetMapping("/validate")
-    public ResponseEntity<Void> validate(HttpServletRequest request) {
-        // 헤더 혹은 쿠키(Fallback)에서 accessToken 추출
+    public ResponseEntity<ApiResponse<Void>> validate(HttpServletRequest request) {
         String token = TokenUtils.getAccessToken(request);
         if (token == null || !tokenService.validateAccessToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("INVALID_TOKEN", "유효하지 않은 토큰입니다."));
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.success("토큰이 유효합니다."));
     }
 
     // 응답 본문은 필요 없음. 헤더만 내려줄 목적
+    @Operation(summary = "OAuth2 완료", description = "OAuth2 인증 완료를 처리합니다.")
     @GetMapping("/oauth2/complete")
-    public ResponseEntity<Void> oauth2Complete() {
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ApiResponse<Void>> oauth2Complete() {
+        return ResponseEntity.ok(ApiResponse.success("OAuth2 인증이 완료되었습니다."));
     }
 
-    /**
-     * 이메일 인증 토큰 검증 엔드포인트
-     * - 인증 메일의 링크 클릭시 호출되는 API
-     * - 토큰 검증 후 이메일 인증 처리(성공/실패 결과 반환)
-     *
-     * @param token 인증 URL에 포함된 쿼리파라미터(랜덤 토큰)
-     * @return 인증 성공: 200 OK + 메시지, 실패: 400 Bad Request + 에러 메시지
-     */
-    @GetMapping("/verify")
-    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
-        try {
-            emailVerificationService.verifyEmailToken(token);
-            return ResponseEntity.ok("이메일 인증이 완료되었습니다.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("인증에 실패했습니다: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<UserResponse> me(
-            @AuthenticationPrincipal AuthenticatedUser principal
-    ) {
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // principal 에서 User 엔티티 가져오기
-        User user = principal.getUser();
-
-        // DTO 로 변환
-        UserResponse dto = UserResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .nickname(user.getNickname())
-                .roles(user.getRoles())
-                .createdAt((user.getCreatedAt()))
-                .emailVerified(user.isEmailVerified())
-                .emailVerifiedAt(user.getEmailVerifiedAt())
-                .status(user.getStatus())
-                .build();
-
-        return ResponseEntity.ok(dto);
-    }
 }
 

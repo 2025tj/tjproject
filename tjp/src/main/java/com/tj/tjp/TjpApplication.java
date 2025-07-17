@@ -1,6 +1,6 @@
 package com.tj.tjp;
 
-import com.tj.tjp.config.FrontendProperties;
+import com.tj.tjp.config.properties.FrontendProperties;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +28,7 @@ public class TjpApplication {
 		//OAuth2
 		String googleClientId = dotenv.get("GOOGLE_CLIENT_ID");
 		String googleClientSecret = dotenv.get("GOOGLE_CLIENT_SECRET");
+		String oauth2StateSecretKey = dotenv.get("OAUTH2_STATE_SECRET_KEY");
 
 		//Jwt
 		String jwtSecretKey = dotenv.get("JWT_SECRET_KEY");
@@ -50,6 +51,7 @@ public class TjpApplication {
 		System.setProperty("MAIL_USERNAME", mailUsername);
 		System.setProperty("MAIL_PASSWORD", mailPassword);
 		System.setProperty("ONE_TIME_JWT_SECRET_KEY", oneTimeJwtSecretKey);
+		System.setProperty("OAUTH2_STATE_SECRET_KEY", oauth2StateSecretKey);
 
 		SpringApplication.run(TjpApplication.class, args);
 		System.out.print("Hello tj!");

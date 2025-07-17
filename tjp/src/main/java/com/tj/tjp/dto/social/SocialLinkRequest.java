@@ -1,8 +1,7 @@
-package com.tj.tjp.dto;
+package com.tj.tjp.dto.social;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Data

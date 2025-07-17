@@ -1,7 +1,7 @@
 //package com.tj.tjp.config.sercurity;
 //
 //import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.tj.tjp.config.FrontendProperties;
+//import com.tj.tjp.config.properties.FrontendProperties;
 //import com.tj.tjp.security.handler.CustomOAuth2FailureHandler;
 //import com.tj.tjp.security.handler.CustomOAuth2SuccessHandler;
 //import com.tj.tjp.security.service.CustomOAuth2UserService;

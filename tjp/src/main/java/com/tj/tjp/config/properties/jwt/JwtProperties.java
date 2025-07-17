@@ -1,4 +1,4 @@
-package com.tj.tjp.config.jwt;
+package com.tj.tjp.config.properties.jwt;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +11,7 @@ import java.time.Duration;
 @Setter
 @Configuration
 @ConfigurationProperties(prefix="app.jwt")
-public class JwtConfig {
+public class JwtProperties {
     /** JWT 서명에 사용할 비밀 키 */
     private String secret;
     /** AccessToken 만료 기간 (ms) */

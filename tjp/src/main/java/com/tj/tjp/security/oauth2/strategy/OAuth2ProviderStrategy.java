@@ -1,4 +1,4 @@
-package com.tj.tjp.security.oauth.strategy;
+package com.tj.tjp.security.oauth2.strategy;
 
 import java.util.Map;
 

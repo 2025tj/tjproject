@@ -1,26 +1,22 @@
 package com.tj.tjp.security.jwt;
 
-import com.tj.tjp.config.jwt.JwtConfig;
+import com.tj.tjp.config.properties.jwt.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 /**
@@ -30,7 +26,7 @@ import java.util.stream.Collectors;
 public class JwtProvider {
 
     // application.yml의 app.jwt 설정을 바인딩한 설정 클래스
-    private final JwtConfig jwtConfig;
+    private final JwtProperties jwtProperties;
 
     private Key secretKey;
 
@@ -39,8 +35,8 @@ public class JwtProvider {
      * Spring이 이 생성자를 통해 bean을 생성합니다.
      */
     @Autowired
-    public JwtProvider(JwtConfig jwtConfig) {
-        this.jwtConfig = jwtConfig;
+    public JwtProvider(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
     }
 
     /**
@@ -49,7 +45,7 @@ public class JwtProvider {
     @PostConstruct
     public void init() {
         this.secretKey = Keys.hmacShaKeyFor(
-                jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8)
+                jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8)
         );
     }
 
@@ -61,9 +57,9 @@ public class JwtProvider {
         return Jwts.builder()
                 .setSubject(email)
                 .claim("roles", roles.toArray(new String[0]))
-                .setIssuer(jwtConfig.getIssuer())
+                .setIssuer(jwtProperties.getIssuer())
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plusMillis(jwtConfig.getAccessTokenTtl().toMillis())))
+                .setExpiration(Date.from(now.plusMillis(jwtProperties.getAccessTokenTtl().toMillis())))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -75,9 +71,9 @@ public class JwtProvider {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setSubject(email)
-                .setIssuer(jwtConfig.getIssuer())
+                .setIssuer(jwtProperties.getIssuer())
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plusMillis(jwtConfig.getRefreshTokenTtl().toMillis())))
+                .setExpiration(Date.from(now.plusMillis(jwtProperties.getRefreshTokenTtl().toMillis())))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }

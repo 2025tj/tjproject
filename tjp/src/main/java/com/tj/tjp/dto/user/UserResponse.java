@@ -17,6 +17,7 @@ public class UserResponse {
     private String email;
     private String nickname;
     private Set<String> roles;
+    private LocalDateTime createdAt;
     private boolean emailVerified;
     private LocalDateTime emailVerifiedAt;
     private String status;

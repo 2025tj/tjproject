@@ -42,6 +42,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final SocialAccountRepository socialAccountRepository;
     private final Map<String, OAuth2ProviderStrategy> providerStrategies;
 
+    @Transactional
     @Override
     public OAuth2User loadUser(OAuth2UserRequest request) {
         //1. 기본 정보 로드

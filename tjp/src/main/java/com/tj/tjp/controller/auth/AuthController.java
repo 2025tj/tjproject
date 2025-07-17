@@ -127,6 +127,7 @@ public class AuthController {
                 .email(user.getEmail())
                 .nickname(user.getNickname())
                 .roles(user.getRoles())
+                .createdAt((user.getCreatedAt()))
                 .emailVerified(user.isEmailVerified())
                 .emailVerifiedAt(user.getEmailVerifiedAt())
                 .status(user.getStatus())

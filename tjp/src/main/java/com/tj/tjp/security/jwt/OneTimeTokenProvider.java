@@ -3,6 +3,7 @@ package com.tj.tjp.security.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +12,7 @@ import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class OneTimeTokenProvider {
 
@@ -32,7 +34,7 @@ public class OneTimeTokenProvider {
      * email, provider 정보를 담아 일회용 링크용 JWT를 생성합니다.
      * TTL은 application.yml의 jwt.oneTime.expiryMinutes에 따릅니다.
      */
-    public String createToken(String email, String provider) {
+    public String createToken(String email, String provider, String providerId) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setSubject("oauth2-link")
@@ -66,4 +68,33 @@ public class OneTimeTokenProvider {
         Claims claims = parseClaims(token);
         return claims.get("provider", String.class);
     }
+
+    /**
+     * 토큰에서 프로바이더 ID 추출
+     */
+    public String extractProviderId(String token) {
+        return extractClaims(token).get("providerId", String.class);
+    }
+
+    /**
+     * 토큰 유효성 검사
+     */
+    public boolean validateToken(String token) {
+        try {
+            extractClaims(token);
+            return true;
+        } catch (Exception e) {
+            log.warn("일회용 토큰 검증 실패: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
 }

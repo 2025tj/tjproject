@@ -29,12 +29,14 @@ public class UserService {
 
     @Transactional
     public Long signup(SignupRequest dto) {
+        //중복검사
         if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
         if (userRepository.findByNickname(dto.getNickname()).isPresent()) {
             throw new IllegalArgumentException("이미 사용중인 닉네임입니다.");
         }
+        //사용자 생성
         User user= User.builder()
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))

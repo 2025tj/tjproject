@@ -21,8 +21,8 @@ public class OneTimeLinkCookieProvider {
     /**
      * 이메일·provider로 생성한 one-time JWT를 HttpOnly 쿠키로 감싸 전달합니다.
      */
-    public ResponseCookie createOneTimeLinkCookie(String email, String provider) {
-        String token = tokenProvider.createToken(email, provider);
+    public ResponseCookie createOneTimeLinkCookie(String email, String provider, String providerId) {
+        String token = tokenProvider.createToken(email, provider, providerId);
         return ResponseCookie.from("oneTimeLink", token)
                 .httpOnly(true)
                 .secure(true)

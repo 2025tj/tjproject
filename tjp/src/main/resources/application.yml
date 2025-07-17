@@ -63,8 +63,11 @@ logging:
 
 frontend:
   redirect-urls:
-    signup: ${FRONTEND_BASE_URL}/email/verify
+    emailVerification: ${FRONTEND_BASE_URL}/email/verify
+    signup: ${FRONTEND_BASE_URL}/signup
     oauth2-login: ${FRONTEND_BASE_URL}/
+#    oauth2-link-complete: ${FRONTEND_BASE_URL}/oauth2/link-complete?provider={provider}
+    oauth2-link-complete: ${FRONTEND_BASE_URL}/mypage
     oauth2-link: ${FRONTEND_BASE_URL}/oauth2/link/{registrationId}
     oauth2-signup: ${FRONTEND_BASE_URL}/oauth2/signup/{registrationId}
   allowed-origins:

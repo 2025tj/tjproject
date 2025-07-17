@@ -7,9 +7,9 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 
 @Getter
 public class OAuth2SignupRequiredException extends OAuth2AuthenticationException {
-    private final String email, provider;
-    public OAuth2SignupRequiredException(String email, String provider) {
+    private final String email, provider, providerId;
+    public OAuth2SignupRequiredException(String email, String provider, String providerId) {
         super(new OAuth2Error("SIGNUP_REQUIRED"), "Signup required");
-        this.email = email; this.provider = provider;
+        this.email = email; this.provider = provider; this.providerId= providerId;
     }
 }

@@ -50,7 +50,7 @@ public class UserController {
                 .orElseThrow();
 
         // 2) 서비스에 위임
-        socialAccountService.linkWithProviderId(
+        socialAccountService.linkSocialAccount(
                 user,
                 req.getProvider(),
                 req.getProviderId()

@@ -54,7 +54,7 @@ public class EmailVerificationService {
         }
 
         // 3. 인증 링크 생성 (프론트엔드 URL 활용)
-        String verificationUrl = frontendProperties.getRedirectUrls().get("signup") + "?token=" + token;
+        String verificationUrl = frontendProperties.getRedirectUrls().get("emailVerification") + "?token=" + token;
 
         // 4. 인증 메일 발송
         String subject = "[서비스명] 이메일 인증을 완료해주세요";

@@ -2,6 +2,7 @@ package com.tj.tjp.config.sercurity;
 
 //import com.tj.tjp.security.CustomOAuth2FailureHandler;
 //import com.tj.tjp.security.service.CustomOAuth2UserService;
+import com.tj.tjp.config.oauth2.CustomAuthorizationRequestResolver;
 import com.tj.tjp.security.filter.JwtAuthenticationFilter;
 import com.tj.tjp.security.handler.CustomOAuth2FailureHandler;
 import com.tj.tjp.security.handler.CustomOAuth2SuccessHandler;
@@ -10,6 +11,7 @@ import com.tj.tjp.security.service.CustomOAuth2UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,7 +21,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -42,9 +46,16 @@ public class SecurityConfig {
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
+    private final OAuth2AuthorizationRequestResolver authorizationRequestResolver;
+    @Autowired
+    private ClientRegistrationRepository clientRegistrationRepository;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        // baseUri는 보통 "/oauth2/authorization"
+        CustomAuthorizationRequestResolver customResolver =
+                new CustomAuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
 
         // 공통 예외 처리, csrf, cors 등
         http
@@ -87,6 +98,7 @@ public class SecurityConfig {
             .authorizationEndpoint(auth -> auth
                     // 클라이언트가 /oauth2/authorization/{provider}로 요청
                     .baseUri("/oauth2/authorization")
+                    .authorizationRequestResolver(customResolver)
             )
             // 2) 인증 후 리디렉션을 받을 엔드포인트 설정
             .redirectionEndpoint(redir -> redir

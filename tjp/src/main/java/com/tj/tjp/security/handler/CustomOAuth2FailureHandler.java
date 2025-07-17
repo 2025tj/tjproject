@@ -35,30 +35,33 @@ public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler 
                                         HttpServletResponse res,
                                         AuthenticationException ex) throws IOException {
 
-        // 1) LINK_REQUIRED 예외
-        if (ex instanceof OAuth2LinkRequiredException linkEx) {
-            issueOneTimeLink(res, linkEx.getEmail(), linkEx.getProvider());
-            String url = frontendProps.getRedirectUrls().get("oauth2-link")
-                    .replace("{registrationId}", linkEx.getProvider());
+//        // 1) LINK_REQUIRED 예외
+//        if (ex instanceof OAuth2LinkRequiredException linkEx) {
+//            issueOneTimeLink(res, linkEx.getEmail(), linkEx.getProvider());
+//            String url = frontendProps.getRedirectUrls().get("oauth2-link")
+//                    .replace("{registrationId}", linkEx.getProvider());
+//            res.sendRedirect(url);
+//            return;
+//        }
+
+        // 2) SIGNUP_REQUIRED 예외
+        if (ex instanceof OAuth2SignupRequiredException signEx) {
+//            issueOneTimeLink(res, signEx.getEmail(), signEx.getProvider(), signEx.getProviderId());
+            String url = frontendProps.getRedirectUrls().get("signup");
             res.sendRedirect(url);
             return;
         }
 
-        // 2) SIGNUP_REQUIRED 예외
-        if (ex instanceof OAuth2SignupRequiredException signEx) {
-            issueOneTimeLink(res, signEx.getEmail(), signEx.getProvider());
-            String url = frontendProps.getRedirectUrls().get("oauth2-signup")
-                    .replace("{registrationId}", signEx.getProvider());
-            res.sendRedirect(url);
-            return;
-        }
+        // 기타 오류 → 로그인 페이지로 리다이렉트
+        log.error("OAuth2 인증 실패: {}", ex.getMessage());
+        res.sendRedirect("/login?error=oauth2");
 
 //        // 3) 나머지 에러
 //        res.sendRedirect(frontendProps.getRedirectUrls().get("login") + "?error");
     }
 
-    private void issueOneTimeLink(HttpServletResponse res, String email, String provider) {
-        ResponseCookie cookie = cookieProvider.createOneTimeLinkCookie(email, provider);
+    private void issueOneTimeLink(HttpServletResponse res, String email, String provider, String providerId) {
+        ResponseCookie cookie = cookieProvider.createOneTimeLinkCookie(email, provider, providerId);
         res.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 

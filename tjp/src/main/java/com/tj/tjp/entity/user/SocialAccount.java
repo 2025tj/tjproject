@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name="social_accounst",
+@Table(name="social_accounts",
         uniqueConstraints = @UniqueConstraint(columnNames = {"provider", "provider_id"}))
 public class SocialAccount {
 

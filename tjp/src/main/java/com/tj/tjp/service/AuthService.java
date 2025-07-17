@@ -83,47 +83,47 @@ public class AuthService {
         return new LoginResult(user.getEmail(), "로그인 성공", warning);
     }
 
-    /**
-     * 소셜 회원가입 처리:
-     * 1) 이메일/닉네임 중복 체크
-     * 2) User 생성 (비밀번호는 받아서 해시, 이메일은 이미 검증된 것으로 처리)
-     * 3) emailVerified=true, emailVerifiedAt 설정
-     * 4) SocialAccount 연결
-     * 5) 가입 이벤트 발행
-     */
-    @Transactional
-    public Long signupOAuth2(OAuth2SignupRequest dto) {
-        // 1) 중복 검사
-        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new DuplicateUserException("이미 가입된 이메일입니다.");
-        }
-        if (userRepository.findByNickname(dto.getNickname()).isPresent()) {
-            throw new DuplicateUserException("이미 사용중인 닉네임입니다.");
-        }
-
-        // 2) User 엔티티 생성
-        User user = User.builder()
-                .email(dto.getEmail())
-                // 소셜가입이라 해도 비밀번호를 직접 설정하도록 요구
-                .password(passwordEncoder.encode(dto.getPassword()))
-                .nickname(dto.getNickname())
-                .roles(Set.of("ROLE_USER"))
-                // emailVerified를 true로 설정 (소셜 쪽에서 이미 인증했으므로)
-                .emailVerified(true)
-                .emailVerifiedAt(LocalDateTime.now())
-                .build();
-        userRepository.save(user);
-
-        // 3) SocialAccount 연결
-        socialAccountService.linkWithProviderId(
-                user,
-                dto.getProvider(),
-                dto.getProviderId()
-        );
-
-        // 4) (원한다면) 가입 성공 후 이메일 발송 이벤트
-        eventPublisher.publishEvent(new UserSignupEvent(user));
-
-        return user.getId();
-    }
+//    /**
+//     * 소셜 회원가입 처리:
+//     * 1) 이메일/닉네임 중복 체크
+//     * 2) User 생성 (비밀번호는 받아서 해시, 이메일은 이미 검증된 것으로 처리)
+//     * 3) emailVerified=true, emailVerifiedAt 설정
+//     * 4) SocialAccount 연결
+//     * 5) 가입 이벤트 발행
+//     */
+//    @Transactional
+//    public Long signupOAuth2(OAuth2SignupRequest dto) {
+//        // 1) 중복 검사
+//        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+//            throw new DuplicateUserException("이미 가입된 이메일입니다.");
+//        }
+//        if (userRepository.findByNickname(dto.getNickname()).isPresent()) {
+//            throw new DuplicateUserException("이미 사용중인 닉네임입니다.");
+//        }
+//
+//        // 2) User 엔티티 생성
+//        User user = User.builder()
+//                .email(dto.getEmail())
+//                // 소셜가입이라 해도 비밀번호를 직접 설정하도록 요구
+//                .password(passwordEncoder.encode(dto.getPassword()))
+//                .nickname(dto.getNickname())
+//                .roles(Set.of("ROLE_USER"))
+//                // emailVerified를 true로 설정 (소셜 쪽에서 이미 인증했으므로)
+//                .emailVerified(true)
+//                .emailVerifiedAt(LocalDateTime.now())
+//                .build();
+//        userRepository.save(user);
+//
+//        // 3) SocialAccount 연결
+//        socialAccountService.linkSocialAccount(
+//                user,
+//                dto.getProvider(),
+//                dto.getProviderId()
+//        );
+//
+//        // 4) (원한다면) 가입 성공 후 이메일 발송 이벤트
+//        eventPublisher.publishEvent(new UserSignupEvent(user));
+//
+//        return user.getId();
+//    }
 }

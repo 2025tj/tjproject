@@ -132,34 +132,5 @@ public class JwtProvider {
                 : List.of();
     }
 
-    /**
-     * Access Token에서 이메일 추출
-     */
-    public String getEmailFromAccessToken(String token) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.getSubject(); // subject에 이메일이 저장됨
-        } catch (Exception e) {
-            throw new RuntimeException("토큰에서 이메일 추출 실패", e);
-        }
-    }
 
-    /**
-     * Access Token 유효성 검사
-     */
-    public boolean validateAccessToken(String token) {
-        try {
-            Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
 }

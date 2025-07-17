@@ -10,4 +10,9 @@ public class GoogleOAuth2ProviderStrategy implements OAuth2ProviderStrategy{
     public String extractProviderId(Map<String, Object> attributes) {
         return (String) attributes.get("sub");
     }
+
+    @Override
+    public String extractEmail(Map<String, Object> attributes) {
+        return (String) attributes.get("email");
+    }
 }

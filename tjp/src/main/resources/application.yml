@@ -78,7 +78,7 @@ app:
     # 토큰 서명에 사용할 비밀 키
     secret: ${JWT_SECRET_KEY}
     # AccessToken 유효기간 (밀리초 단위)
-    access-token-ttl: 60000         # 1분
+    access-token-ttl: 600000        # 10분
     # RefreshToken 유효기간 (밀리초 단위)
     refresh-token-ttl: 604800000    # 7일
     # 토큰 발급자(issuer)

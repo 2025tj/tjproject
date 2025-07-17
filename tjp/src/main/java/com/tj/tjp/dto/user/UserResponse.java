@@ -1,4 +1,4 @@
-package com.tj.tjp.dto;
+package com.tj.tjp.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserDto {
+public class UserResponse {
     private Long id;
     private String email;
     private String nickname;

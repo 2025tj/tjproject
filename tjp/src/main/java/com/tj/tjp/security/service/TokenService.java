@@ -3,6 +3,8 @@ package com.tj.tjp.security.service;
 import com.tj.tjp.config.FrontendProperties;
 import com.tj.tjp.security.jwt.JwtProvider;
 import com.tj.tjp.util.TokenUtils;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -61,4 +63,12 @@ public class TokenService {
     public boolean validateAccessToken(String token) {
         return jwtProvider.validateToken(token);
     }
+
+    /**
+     * Access Token에서 이메일 추출
+     */
+    public String getEmailFromAccessToken(String token) {
+        return jwtProvider.getEmailFromToken(token);
+    }
+
 }

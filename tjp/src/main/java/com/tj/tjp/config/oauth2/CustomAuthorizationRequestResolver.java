@@ -27,15 +27,39 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
 
     private OAuth2AuthorizationRequest customize(OAuth2AuthorizationRequest req, HttpServletRequest request) {
         if (req == null) return null;
+
         String mode = request.getParameter("mode");
+        String token = request.getParameter("token"); // 🔥 토큰 파라미터 추가
+
         if (mode != null) {
-            // 기존 state를 안전하게 보존
             String origState = req.getState();
-            String state = "mode=" + mode + ":" + origState;
+            String state = "mode=" + mode;
+
+            // 토큰이 있으면 state에 포함
+            if (token != null) {
+                state += "&token=" + token;
+            }
+
+            state += ":" + origState;
+
             return OAuth2AuthorizationRequest.from(req)
                     .state(state)
                     .build();
         }
         return req;
     }
+
+//    private OAuth2AuthorizationRequest customize(OAuth2AuthorizationRequest req, HttpServletRequest request) {
+//        if (req == null) return null;
+//        String mode = request.getParameter("mode");
+//        if (mode != null) {
+//            // 기존 state를 안전하게 보존
+//            String origState = req.getState();
+//            String state = "mode=" + mode + ":" + origState;
+//            return OAuth2AuthorizationRequest.from(req)
+//                    .state(state)
+//                    .build();
+//        }
+//        return req;
+//    }
 }

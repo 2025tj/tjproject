@@ -1,6 +1,6 @@
 package com.tj.tjp.controller.auth;
 
-import com.tj.tjp.dto.UserDto;
+import com.tj.tjp.dto.user.UserResponse;
 import com.tj.tjp.dto.auth.login.LoginRequest;
 import com.tj.tjp.dto.auth.login.LoginResult;
 import com.tj.tjp.dto.auth.signup.SignupRequest;
@@ -111,7 +111,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserDto> me(
+    public ResponseEntity<UserResponse> me(
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         if (principal == null) {
@@ -122,7 +122,7 @@ public class AuthController {
         User user = principal.getUser();
 
         // DTO 로 변환
-        UserDto dto = UserDto.builder()
+        UserResponse dto = UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())

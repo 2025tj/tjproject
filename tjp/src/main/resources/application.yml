@@ -67,6 +67,7 @@ logging:
 frontend:
   redirect-urls:
     emailVerification: ${FRONTEND_BASE_URL}/email/verify
+    password-reset: ${FRONTEND_BASE_URL}/auth/password-reset
     signup: ${FRONTEND_BASE_URL}/signup
     oauth2-login: ${FRONTEND_BASE_URL}/
 #    oauth2-link-complete: ${FRONTEND_BASE_URL}/oauth2/link-complete?provider={provider}

@@ -1,16 +1,13 @@
 // AuthService.java
-package com.tj.tjp.service;
+package com.tj.tjp.service.auth;
 
 import com.tj.tjp.dto.auth.login.LoginResult;
-import com.tj.tjp.dto.auth.signup.OAuth2SignupRequest;
-import com.tj.tjp.entity.user.User;
 import com.tj.tjp.event.EmailVerificationResendEvent;
-import com.tj.tjp.event.UserSignupEvent;
-import com.tj.tjp.exception.DuplicateUserException;
 import com.tj.tjp.exception.EmailNotVerifiedException;
 import com.tj.tjp.repository.user.UserRepository;
 import com.tj.tjp.security.principal.AuthenticatedUser;
 import com.tj.tjp.security.service.TokenService;
+import com.tj.tjp.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor

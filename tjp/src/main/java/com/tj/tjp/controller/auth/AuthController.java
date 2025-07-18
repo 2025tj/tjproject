@@ -1,14 +1,11 @@
 package com.tj.tjp.controller.auth;
 
 import com.tj.tjp.dto.common.ApiResponse;
-import com.tj.tjp.dto.user.UserResponse;
 import com.tj.tjp.dto.auth.login.LoginRequest;
 import com.tj.tjp.dto.auth.login.LoginResult;
 import com.tj.tjp.dto.auth.signup.SignupRequest;
-import com.tj.tjp.entity.user.User;
 import com.tj.tjp.security.principal.AuthenticatedUser;
-import com.tj.tjp.security.principal.LocalUserPrincipal;
-import com.tj.tjp.service.AuthService;
+import com.tj.tjp.service.auth.AuthService;
 import com.tj.tjp.security.service.TokenService;
 import com.tj.tjp.service.email.EmailVerificationService;
 import com.tj.tjp.service.user.UserService;
@@ -21,12 +18,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @Slf4j
 @Tag(name = "Authentication", description = "인증 관련 API")

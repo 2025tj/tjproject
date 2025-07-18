@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -56,17 +57,50 @@ public class EmailVerificationService {
         String verificationUrl = frontendProperties.getRedirectUrls().get("emailVerification") + "?token=" + token;
 
         // 4. 인증 메일 발송
-        String subject = "[서비스명] 이메일 인증을 완료해주세요";
-        String message = "<p>아래 링크를 클릭하여 이메일 인증을 완료하세요:<br/>"
-                + "<a href=\"" + verificationUrl + "\">" + verificationUrl + "</a></p>";
-        try {
-            mailSenderService.send(user.getEmail(), subject, message, true); // mailSender는 JavaMailSender 등
-        } catch (Exception e) {
-            // 메일 발송 실패 예외 처리
-            // 1) 사용자에게 안내(프론트까지 에러 전달) 또는
-            // 2) 관리자 알림, 로그 저장 등
-            throw new RuntimeException("이메일 인증 메일 발송에 실패했습니다.", e);
+        sendVerificationMail(user.getEmail(), verificationUrl);
+    }
+
+    /**
+     * 이메일 인증 메일 재발송
+     * - 기존 미사용 토큰들을 무효화하고 새로운 토큰 생성
+     * - 새로운 인증 메일 발송
+     * @param email 재발송을 요청한 사용자의 이메일
+     */
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        // 1. 사용자 조회
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        // 2. 이미 인증된 사용자인지 확인
+        if (user.isEmailVerified()) {
+            throw new IllegalStateException("이미 이메일 인증이 완료된 사용자입니다.");
         }
+
+        // 3. 기존 미사용 토큰들 무효화 (사용 처리)
+        List<EmailVerificationToken> existingTokens = tokenRepository.findByUserAndUsedFalse(user);
+        existingTokens.forEach(token -> token.markUsed(true));
+        tokenRepository.saveAll(existingTokens);
+
+        // 4. 새로운 토큰 생성 및 저장
+        String newToken = UUID.randomUUID().toString();
+        LocalDateTime expiredAt = LocalDateTime.now().plusHours(24);
+
+        EmailVerificationToken newTokenEntity = EmailVerificationToken.builder()
+                .token(newToken)
+                .user(user)
+                .expiredAt(expiredAt)
+                .build();
+
+        try {
+            tokenRepository.save(newTokenEntity);
+        } catch (Exception e) {
+            throw new RuntimeException("인증 토큰 저장에 실패했습니다.", e);
+        }
+
+        // 5. 새로운 인증 링크 생성 및 메일 발송
+        String verificationUrl = frontendProperties.getRedirectUrls().get("emailVerification") + "?token=" + newToken;
+        sendVerificationMail(user.getEmail(), verificationUrl);
     }
 
     /**
@@ -96,5 +130,31 @@ public class EmailVerificationService {
         // 4. 토큰 사용 처리 (1회성)
         emailVerificationToken.markUsed(true);
         tokenRepository.save(emailVerificationToken);
+    }
+
+    /**
+     * 인증 메일 발송 공통 메서드
+     * @param email 수신자 이메일
+     * @param verificationUrl 인증 URL
+     */
+    private void sendVerificationMail(String email, String verificationUrl) {
+        String subject = "[서비스명] 이메일 인증을 완료해주세요";
+        String message = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>"
+                + "<h2 style='color: #333;'>이메일 인증</h2>"
+                + "<p>안녕하세요!</p>"
+                + "<p>아래 버튼을 클릭하여 이메일 인증을 완료해주세요:</p>"
+                + "<div style='text-align: center; margin: 30px 0;'>"
+                + "<a href='" + verificationUrl + "' style='background-color: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>이메일 인증하기</a>"
+                + "</div>"
+                + "<p style='color: #666; font-size: 14px;'>만약 버튼이 작동하지 않으면 아래 링크를 복사하여 브라우저에 붙여넣으세요:</p>"
+                + "<p style='word-break: break-all; color: #666; font-size: 14px;'>" + verificationUrl + "</p>"
+                + "<p style='color: #666; font-size: 12px; margin-top: 30px;'>이 링크는 24시간 후 만료됩니다.</p>"
+                + "</div>";
+
+        try {
+            mailSenderService.send(email, subject, message, true);
+        } catch (Exception e) {
+            throw new RuntimeException("이메일 인증 메일 발송에 실패했습니다.", e);
+        }
     }
 }

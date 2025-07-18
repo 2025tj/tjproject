@@ -169,21 +169,35 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
      */
     private void handleLinkMode(HttpServletResponse response, OAuth2UserPrincipal principal,
                                 String provider, StateInfo stateInfo) throws IOException {
-        String oneTimeToken = stateInfo.getToken();
 
-        if (oneTimeToken != null) {
-            // 기존 설정 활용: oauth2-link-complete URL 사용
-            String redirectUrl = frontendProperties.getRedirectUrls().get("oauth2-link-complete");
-            redirectUrl += String.format("?provider=%s&token=%s&success=true", provider, oneTimeToken);
-            response.sendRedirect(redirectUrl);
-        } else {
-            // 기존 설정 활용: oauth2-link URL 패턴 사용
-            String redirectUrlPattern = frontendProperties.getRedirectUrls().get("oauth2-link");
-            String redirectUrl = redirectUrlPattern.replace("{registrationId}", provider);
-            redirectUrl += "?error=missing_token";
-            response.sendRedirect(redirectUrl);
-        }
+        String redirectUrl = frontendProperties.getRedirectUrls().get("oauth2-link-complete")
+                .replace("{provider}", provider);
+
+        // provider를 쿼리 파라미터로 추가(프론트에서 받음)
+        redirectUrl += "?provider=" + provider;
+
+        response.sendRedirect(redirectUrl);
     }
+//    private void handleLinkMode(HttpServletResponse response, OAuth2UserPrincipal principal,
+//                                String provider, StateInfo stateInfo) throws IOException {
+//        String oneTimeToken = stateInfo.getToken();
+//
+////        // 로그인 유지
+////        issueTokens(response, principal);
+//
+//        if (oneTimeToken != null) {
+//            // 기존 설정 활용: oauth2-link-complete URL 사용
+//            String redirectUrl = frontendProperties.getRedirectUrls().get("oauth2-link-complete");
+//            redirectUrl += String.format("?provider=%s&token=%s&success=true", provider, oneTimeToken);
+//            response.sendRedirect(redirectUrl);
+//        } else {
+//            // 기존 설정 활용: oauth2-link URL 패턴 사용
+//            String redirectUrlPattern = frontendProperties.getRedirectUrls().get("oauth2-link");
+//            String redirectUrl = redirectUrlPattern.replace("{registrationId}", provider);
+//            redirectUrl += "?error=missing_token";
+//            response.sendRedirect(redirectUrl);
+//        }
+//    }
 
     /**
      * 기본 로그인 처리

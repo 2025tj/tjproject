@@ -9,7 +9,6 @@ import java.time.Duration;
 
 @Getter
 @Setter
-@Configuration
 @ConfigurationProperties(prefix="app.jwt")
 public class JwtProperties {
     /** JWT 서명에 사용할 비밀 키 */

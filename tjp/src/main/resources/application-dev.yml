@@ -1,0 +1,4 @@
+app:
+  cookie:
+    secure: false # prod일시 true
+    same-site: Lax # prod일시 None?

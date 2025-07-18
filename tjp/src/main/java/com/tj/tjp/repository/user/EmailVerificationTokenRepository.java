@@ -1,9 +1,14 @@
 package com.tj.tjp.repository.user;
 
 import com.tj.tjp.entity.user.EmailVerificationToken;
+import com.tj.tjp.entity.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -20,4 +25,34 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
      */
     Optional<EmailVerificationToken> findByToken(String token);
 
+    /**
+     * 특정 사용자의 미사용 토큰들 조회 (재발송 시 기존 토큰 무효화용)
+     * @param user 사용자 엔티티
+     * @return 미사용 토큰 리스트
+     */
+    List<EmailVerificationToken> findByUserAndUsedFalse(User user);
+
+    /**
+     * 특정 사용자의 모든 토큰 조회
+     * @param user 사용자 엔티티
+     * @return 토큰 리스트
+     */
+    List<EmailVerificationToken> findByUser(User user);
+
+    /**
+     * 만료된 토큰들 조회 (배치 정리용)
+     * @param now 현재 시간
+     * @return 만료된 토큰 리스트
+     */
+    @Query("SELECT t FROM EmailVerificationToken t WHERE t.expiredAt < :now")
+    List<EmailVerificationToken> findExpiredTokens(@Param("now") LocalDateTime now);
+
+    /**
+     * 특정 사용자의 유효한 토큰 개수 조회 (재발송 제한용)
+     * @param user 사용자 엔티티
+     * @param now 현재 시간
+     * @return 유효한 토큰 개수
+     */
+    @Query("SELECT COUNT(t) FROM EmailVerificationToken t WHERE t.user = :user AND t.used = false AND t.expiredAt > :now")
+    long countValidTokensByUser(@Param("user") User user, @Param("now") LocalDateTime now);
 }

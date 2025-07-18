@@ -1,5 +1,7 @@
 package com.tj.tjp.security.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tj.tjp.entity.user.SocialAccount;
 import com.tj.tjp.entity.user.User;
 import com.tj.tjp.exception.OAuth2SignupRequiredException;
@@ -8,6 +10,7 @@ import com.tj.tjp.repository.user.UserRepository;
 import com.tj.tjp.security.oauth2.strategy.OAuth2ProviderStrategy;
 import com.tj.tjp.security.principal.OAuth2UserPrincipal;
 import com.tj.tjp.service.SocialAccountService;
+import com.tj.tjp.util.OAuth2StateEncoder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final TokenService tokenService;
     private final SocialAccountRepository socialAccountRepository;
     private final Map<String, OAuth2ProviderStrategy> providerStrategies;
+    private final OAuth2StateEncoder stateEncoder;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
     @Override
@@ -114,14 +119,24 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attr != null) {
                 HttpServletRequest httpRequest = attr.getRequest();
-                String state = httpRequest.getParameter("state");
-                log.info("HttpServletRequest state: {}", state);
+                String encryptedState = httpRequest.getParameter("state");
+                log.info("암호화된 state: {}", encryptedState);
 
-                if (state != null && state.startsWith("mode=link")) {
-                    log.info("✅ 연동 모드 감지됨!");
+                if (encryptedState != null) {
+                    // ✅ state 복호화
+                    String decryptedState = stateEncoder.decrypt(encryptedState);
+                    log.info("복호화된 state: {}", decryptedState);
 
-                    extractAndSetAuthentication(state);
-                    return true;
+                    // JSON 파싱으로 mode 확인
+                    JsonNode stateNode = objectMapper.readTree(decryptedState);
+                    String mode = stateNode.path("mode").asText();
+
+                    if ("link".equals(mode)) {
+                        log.info("✅ 연동 모드 감지됨!");
+                        String token = stateNode.path("token").asText();
+                        extractAndSetAuthentication(token);
+                        return true;
+                    }
                 }
             }
         } catch (Exception e) {
@@ -132,29 +147,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return false;
     }
 
-    private void extractAndSetAuthentication(String state) {
+    private void extractAndSetAuthentication(String token) {
         try {
-            // state에서 token 추출: "mode=link&token=eyJ..."
-            if (state.contains("&token=")) {
-                String tokenPart = state.substring(state.indexOf("&token=") + 7);
-                String token = tokenPart.split(":")[0]; // ":원본state" 제거
+            // JWT 토큰 검증 및 사용자 정보 추출
+            if (tokenService.validateAccessToken(token)) {
+                String email = tokenService.getEmailFromAccessToken(token);
+                User user = userRepository.findByEmail(email).orElse(null);
 
-                // JWT 토큰 검증 및 사용자 정보 추출
-                if (tokenService.validateAccessToken(token)) {
-                    String email = tokenService.getEmailFromAccessToken(token);
-                    User user = userRepository.findByEmail(email).orElse(null);
-
-                    if (user != null) {
-                        // SecurityContext에 인증 정보 설정
-                        OAuth2UserPrincipal principal = new OAuth2UserPrincipal(user, Map.of());
-                        Authentication auth = new OAuth2AuthenticationToken(
-                                principal,
-                                List.of(),
-                                "temp"
-                        );
-                        SecurityContextHolder.getContext().setAuthentication(auth);
-                        log.info("✅ 토큰을 통한 사용자 인증 설정 완료: {}", email);
-                    }
+                if (user != null) {
+                    // SecurityContext에 인증 정보 설정
+                    OAuth2UserPrincipal principal = new OAuth2UserPrincipal(user, Map.of());
+                    Authentication auth = new OAuth2AuthenticationToken(
+                            principal,
+                            List.of(),
+                            "temp"
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    log.info("✅ 토큰을 통한 사용자 인증 설정 완료: {}", email);
                 }
             }
         } catch (Exception e) {

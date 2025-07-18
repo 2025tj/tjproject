@@ -3,10 +3,9 @@ package com.tj.tjp.controller.email;
 import com.tj.tjp.service.email.EmailVerificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/email")
@@ -29,6 +28,24 @@ public class EmailVerificationController {
             return ResponseEntity.ok("이메일 인증이 완료되었습니다.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("인증에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 이메일 인증 메일 재발송 엔드포인트
+     * - 로그인한 사용자가 이메일 인증을 다시 받고자 할 때 호출
+     * - 기존 토큰 무효화 후 새로운 토큰 생성 및 메일 발송
+     *
+     * @param userDetails 현재 로그인한 사용자 정보
+     * @return 재발송 성공: 200 OK + 메시지, 실패: 400 Bad Request + 에러 메시지
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerificationEmail(@AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            emailVerificationService.resendVerificationEmail(userDetails.getUsername());
+            return ResponseEntity.ok("인증 메일이 재발송되었습니다. 이메일을 확인해주세요.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("재발송에 실패했습니다: " + e.getMessage());
         }
     }
 }

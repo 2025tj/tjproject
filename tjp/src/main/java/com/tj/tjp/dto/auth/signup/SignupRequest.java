@@ -29,8 +29,11 @@ public class SignupRequest {
     private String nickname;
 
     @AssertTrue(message = "비밀번호가 일치하지 않습니다.")
-    public boolean isPasswordMatching() {
-        return password != null && password.equals(confirmPassword);
+    public boolean isPasswordConfirmed() {
+        if (password == null || confirmPassword == null) {
+            return false;
+        }
+        return password.equals(confirmPassword);
     }
 }
 

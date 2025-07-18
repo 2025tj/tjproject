@@ -69,9 +69,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //    - "/api/users/me" 경로는 인증된 사용자만 접근 허용
-                        .requestMatchers("/api/users/me", "/api/users/pending-social-link").authenticated()
-                        //    - "/api/auth/**" 및 "/api/users/**" 경로는 모두 허용 (회원가입·로그인 등)
                         .requestMatchers(
+                                "/api/users/me",
+                                "/api/users/pending-social-link",
+                                "/api/email/resend-verification",
+                                "/oauth2/link-complete/**"
+                        ).authenticated()
+                        //    - "/api/auth/**" 경로는 모두 허용 (회원가입·로그인 등)
+                        .requestMatchers(
+                                "/login/oauth2/code/**",
+                                "/oauth2/authorization/**",
+                                "/api/email/verify",
                                 "/oauth2/**",
                                 "/api/auth/**",
                                 "/api/auth/signup",
@@ -113,7 +121,7 @@ public class SecurityConfig {
                                 // 2) 인증 후 리디렉션을 받을 엔드포인트 설정
                                 .redirectionEndpoint(redir -> redir
                                         // 예: /oauth2/callback/google
-                                        .baseUri("/oauth2/login/*")
+                                        .baseUri("/login/oauth2/code/*")
                                 )
                                 // 3) OAuth2 프로바이더에서 사용자 정보 가져올 서비스 등록
                                 .userInfoEndpoint(ui -> ui
@@ -121,6 +129,7 @@ public class SecurityConfig {
                                 )
                                 // 4) 로그인 성공 후 핸들러 등록
                                 .successHandler(customOAuth2SuccessHandler)
+//                                .loginProcessingUrl("/login/oauth2/code/*")
                                 // 5) 로그인 실패 시 핸들러 등록 (필요 시 사용)
                                 .failureHandler(customOAuth2FailureHandler)
                 )

@@ -7,6 +7,7 @@ import com.tj.tjp.dto.auth.login.LoginResult;
 import com.tj.tjp.dto.auth.signup.SignupRequest;
 import com.tj.tjp.entity.user.User;
 import com.tj.tjp.security.principal.AuthenticatedUser;
+import com.tj.tjp.security.principal.LocalUserPrincipal;
 import com.tj.tjp.service.AuthService;
 import com.tj.tjp.security.service.TokenService;
 import com.tj.tjp.service.email.EmailVerificationService;
@@ -18,6 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Slf4j
 @Tag(name = "Authentication", description = "인증 관련 API")
 @RestController
 @RequestMapping("/api/auth")
@@ -39,8 +42,22 @@ public class AuthController {
     @Operation(summary = "회원가입", description = "새로운 사용자를 등록합니다.")
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<Long>> signup(@RequestBody @Valid SignupRequest request) {
-        Long userId = userService.signup(request);
-        return ResponseEntity.ok(ApiResponse.success("회원가입이 완료되었습니다.", userId));
+        try {
+            log.info("회원가입 요청: email={}, nickname={}", request.getEmail(), request.getNickname());
+
+            Long userId = userService.signup(request);
+
+            log.info("회원가입 성공: userId={}", userId);
+            return ResponseEntity.ok(ApiResponse.success("회원가입이 완료되었습니다.", userId));
+        } catch (IllegalArgumentException e) {
+            log.warn("회원가입 실패 - 유효성 검사: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("VALIDATION_ERROR", e.getMessage()));
+        } catch (Exception e) {
+            log.error("회원가입 실패 - 시스템 오류: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("INTERNAL_ERROR", "회원가입 처리 중 오류가 발생했습니다."));
+        }
     }
 
     @Operation(summary = "로그인", description = "사용자 인증을 수행합니다.")
@@ -66,14 +83,10 @@ public class AuthController {
 
     @Operation(summary = "로그아웃", description = "사용자 로그아웃을 수행합니다.")
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(0)
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal AuthenticatedUser userPrincipal,
+            HttpServletResponse response) {
+        tokenService.deleteRefreshToken(userPrincipal.getUser().getEmail(), response);
         return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다."));
     }
 

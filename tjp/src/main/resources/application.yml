@@ -1,4 +1,7 @@
 spring:
+  profiles:
+    active: dev
+
   application:
     name: tjp
 
@@ -34,7 +37,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/oauth2/login/{registrationId}"
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - email
               - profile
@@ -67,7 +70,7 @@ frontend:
     signup: ${FRONTEND_BASE_URL}/signup
     oauth2-login: ${FRONTEND_BASE_URL}/
 #    oauth2-link-complete: ${FRONTEND_BASE_URL}/oauth2/link-complete?provider={provider}
-    oauth2-link-complete: ${FRONTEND_BASE_URL}/mypage
+    oauth2-link-complete: ${FRONTEND_BASE_URL}/oauth2/link-complete
     oauth2-link: ${FRONTEND_BASE_URL}/oauth2/link/{registrationId}
     oauth2-signup: ${FRONTEND_BASE_URL}/oauth2/signup/{registrationId}
     error: ${FRONTEND_BASE_URL}/error
@@ -103,4 +106,8 @@ app:
 
 #  crypto:
 #    secret-key: ${CRYPTO_SECRET_KEY}
+
+#  cookie:
+#    secure: false # prod일시 true
+#    same-site: None
 

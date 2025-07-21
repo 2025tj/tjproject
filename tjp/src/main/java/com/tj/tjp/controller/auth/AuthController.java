@@ -1,5 +1,7 @@
 package com.tj.tjp.controller.auth;
 
+import com.tj.tjp.dto.auth.password.PasswordResetExecuteRequest;
+import com.tj.tjp.dto.auth.password.PasswordResetRequest;
 import com.tj.tjp.dto.common.ApiResponse;
 import com.tj.tjp.dto.auth.login.LoginRequest;
 import com.tj.tjp.dto.auth.login.LoginResult;
@@ -7,6 +9,7 @@ import com.tj.tjp.dto.auth.signup.SignupRequest;
 import com.tj.tjp.security.principal.AuthenticatedUser;
 import com.tj.tjp.service.auth.AuthService;
 import com.tj.tjp.security.service.TokenService;
+import com.tj.tjp.service.auth.PasswordResetService;
 import com.tj.tjp.service.email.EmailVerificationService;
 import com.tj.tjp.service.user.UserService;
 import com.tj.tjp.util.TokenUtils;
@@ -32,6 +35,7 @@ public class AuthController {
     private final AuthService authService;
     private final TokenService tokenService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordResetService passwordResetService;
 
     @Operation(summary = "회원가입", description = "새로운 사용자를 등록합니다.")
     @PostMapping("/signup")
@@ -104,6 +108,5 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> oauth2Complete() {
         return ResponseEntity.ok(ApiResponse.success("OAuth2 인증이 완료되었습니다."));
     }
-
 }
 

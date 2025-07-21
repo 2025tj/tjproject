@@ -62,7 +62,7 @@ public class PasswordResetService {
         }
 
         // 4. 비밀번호 재설정 링크 생성 및 메일 발송
-        String resetUrl = frontendProperties.getRedirectUrls().get("passwordReset") + "?token=" + token;
+        String resetUrl = frontendProperties.getRedirectUrls().get("password-reset") + "?token=" + token;
         sendPasswordResetMail(user.getEmail(), resetUrl);
     }
 

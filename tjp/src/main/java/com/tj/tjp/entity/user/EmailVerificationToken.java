@@ -47,6 +47,12 @@ public class EmailVerificationToken {
     private boolean used = false; // 1회성
 
     /**
+     * 토큰 생성 시각
+     */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    /**
      * 토큰 사용 처리 (used → true)
      */
     public void markUsed(boolean used) {
@@ -59,5 +65,19 @@ public class EmailVerificationToken {
      */
     public void extendExpiry(LocalDateTime expiredAt) {
         this.expiredAt = expiredAt;
+    }
+
+    /**
+     * 토큰 만료 여부 확인
+     */
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(this.expiredAt);
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
     }
 }

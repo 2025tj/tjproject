@@ -3,6 +3,7 @@ package com.tj.tjp.repository.user;
 import com.tj.tjp.entity.user.EmailVerificationToken;
 import com.tj.tjp.entity.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -55,4 +56,18 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
      */
     @Query("SELECT COUNT(t) FROM EmailVerificationToken t WHERE t.user = :user AND t.used = false AND t.expiredAt > :now")
     long countValidTokensByUser(@Param("user") User user, @Param("now") LocalDateTime now);
+
+    /**
+     * 만료된 토큰 삭제
+     */
+    @Modifying
+    @Query("DELETE FROM EmailVerificationToken e WHERE e.expiredAt < :cutoffTime")
+    int deleteByExpiredAtBefore(@Param("cutoffTime") LocalDateTime cutoffTime);
+
+    /**
+     * 사용된 토큰 중 생성일이 특정 시점 이전인 것들 삭제
+     */
+    @Modifying
+    @Query("DELETE FROM EmailVerificationToken e WHERE e.used = true AND e.createdAt < :cutoffTime")
+    int deleteByUsedTrueAndCreatedAtBefore(@Param("cutoffTime") LocalDateTime cutoffTime);
 }

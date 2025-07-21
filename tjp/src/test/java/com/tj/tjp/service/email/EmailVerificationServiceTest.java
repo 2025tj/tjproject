@@ -1,12 +1,12 @@
 package com.tj.tjp.service.email;
 
-import com.tj.tjp.entity.user.EmailVerificationToken;
-import com.tj.tjp.entity.user.User;
-import com.tj.tjp.repository.user.EmailVerificationTokenRepository;
-import com.tj.tjp.repository.user.UserRepository;
+import com.tj.tjp.domain.email.service.EmailVerificationService;
+import com.tj.tjp.domain.email.service.MailSenderService;
+import com.tj.tjp.domain.email.entity.EmailVerificationToken;
+import com.tj.tjp.domain.user.entity.User;
+import com.tj.tjp.domain.email.repository.EmailVerificationTokenRepository;
+import com.tj.tjp.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.shadow.com.univocity.parsers.annotations.Replace;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;

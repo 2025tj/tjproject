@@ -1,7 +1,7 @@
 package com.tj.tjp.event.listener;
 
 import com.tj.tjp.event.UserSignupEvent;
-import com.tj.tjp.service.email.EmailVerificationService;
+import com.tj.tjp.domain.email.service.EmailVerificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;

@@ -1,6 +1,6 @@
 package com.tj.tjp.entity;
 
-import com.tj.tjp.entity.user.ProviderType;
+import com.tj.tjp.domain.social.entity.ProviderType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

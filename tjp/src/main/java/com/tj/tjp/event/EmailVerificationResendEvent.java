@@ -1,7 +1,7 @@
 package com.tj.tjp.event;
 
 
-import com.tj.tjp.entity.user.User;
+import com.tj.tjp.domain.user.entity.User;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

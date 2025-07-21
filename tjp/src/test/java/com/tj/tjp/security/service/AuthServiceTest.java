@@ -1,11 +1,11 @@
 package com.tj.tjp.security.service;
 
-import com.tj.tjp.entity.user.User;
+import com.tj.tjp.domain.user.entity.User;
 import com.tj.tjp.event.EmailVerificationResendEvent;
-import com.tj.tjp.exception.EmailNotVerifiedException;
-import com.tj.tjp.repository.user.UserRepository;
-import com.tj.tjp.security.principal.AuthenticatedUser;
-import com.tj.tjp.service.auth.AuthService;
+import com.tj.tjp.common.exception.EmailNotVerifiedException;
+import com.tj.tjp.domain.user.repository.UserRepository;
+import com.tj.tjp.domain.auth.security.principal.AuthenticatedUser;
+import com.tj.tjp.domain.auth.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

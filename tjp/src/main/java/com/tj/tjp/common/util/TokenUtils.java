@@ -44,8 +44,19 @@ public class TokenUtils {
         return (token != null) ? token : getAccessTokenFromCookie(req);
     }
 
+//    public static String getRefreshToken(HttpServletRequest req) {
+//        String token = getRefreshTokenFromHeader(req);
+//        return (token != null) ? token : getRefreshTokenFromCookie(req);
+//    }
     public static String getRefreshToken(HttpServletRequest req) {
         String token = getRefreshTokenFromHeader(req);
-        return (token != null) ? token : getRefreshTokenFromCookie(req);
+        System.out.println("🔍 Header에서 가져온 Refresh Token: " + token);
+
+        if (token == null || token.isBlank()) {
+            token = getRefreshTokenFromCookie(req);
+            System.out.println("🔍 Cookie에서 가져온 Refresh Token: " + token);
+        }
+
+        return token;
     }
 }

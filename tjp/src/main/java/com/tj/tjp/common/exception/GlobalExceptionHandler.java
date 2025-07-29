@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -140,6 +142,13 @@ public class GlobalExceptionHandler {
     }
 
     // === 기타 예외들 ===
+
+    @ExceptionHandler(FieldErrorException.class)
+    public ResponseEntity<Map<String, String>> handleFieldError(FieldErrorException ex) {
+        Map<String, String> errors = new HashMap<>();
+        errors.put(ex.getField(), ex.getMessage());
+        return ResponseEntity.badRequest().body(errors);
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(

@@ -7,9 +7,11 @@ import com.tj.tjp.domain.oauth2.handler.CustomOAuth2FailureHandler;
 import com.tj.tjp.domain.oauth2.handler.CustomOAuth2SuccessHandler;
 //import com.tj.tjp.security.OAuth2UserCumstomService;
 import com.tj.tjp.domain.oauth2.service.CustomOAuth2UserService;
+import com.tj.tjp.infrastructure.config.properties.FrontendProperties;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,6 +31,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @RequiredArgsConstructor
 @Configuration
 public class SecurityConfig {
+
+    // FrontendProperties를 주입받아 동적으로 CORS 설정
+    private final FrontendProperties frontendProperties;
 
     private final CustomOAuth2UserService customOAuth2UserService;
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
@@ -79,7 +84,9 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**",
-                                "/api/auth/password/reset-request"
+                                "/api/auth/password/reset-request",
+                                "/actuator/health",
+                                "/actuator/info"
                         ).permitAll()
                         //    - 나머지 모든 요청은 인증 필요
                         .anyRequest().authenticated()
@@ -147,7 +154,10 @@ public class SecurityConfig {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
-                            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+                            // 동적으로 CORS 헤더 설정 (첫 번째 allowed origin 사용)
+                            String allowedOrigin = frontendProperties.getAllowedOrigins().get(0);
+                            response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+//                            response.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
                             response.setHeader("Access-Control-Allow-Credentials", "true");
                             response.getWriter().write("{\"error\":\"Access Denied\",\"message\":\"접근 권한이 없습니다.\"}");
                         })

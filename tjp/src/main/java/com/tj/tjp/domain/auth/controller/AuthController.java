@@ -1,6 +1,7 @@
 package com.tj.tjp.domain.auth.controller;
 
 import com.tj.tjp.common.dto.ApiResponse;
+import com.tj.tjp.common.exception.EmailNotVerifiedException;
 import com.tj.tjp.domain.auth.dto.login.LoginRequest;
 import com.tj.tjp.domain.auth.dto.login.LoginResult;
 import com.tj.tjp.domain.auth.dto.signup.SignupRequest;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,8 +64,22 @@ public class AuthController {
             @RequestBody @Valid LoginRequest request,
             HttpServletResponse response
     ) {
-        LoginResult result = authService.login(request.email(), request.password(), response);
-        return ResponseEntity.ok(ApiResponse.success("로그인이 완료되었습니다.", result));
+        try {
+            LoginResult result = authService.login(request.email(), request.password(), response);
+            return ResponseEntity.ok(ApiResponse.success("로그인이 완료되었습니다.", result));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("INVALID_CREDENTIALS", "이메일 또는 비밀번호가 올바르지 않습니다."));
+        } catch (EmailNotVerifiedException e) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("EMAIL_NOT_VERIFIED", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("INTERNAL_ERROR", "로그인 처리 중 오류가 발생했습니다."));
+        }
     }
 
     @Operation(summary = "토큰 갱신", description = "액세스 토큰을 갱신합니다.")

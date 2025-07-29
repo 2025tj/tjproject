@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}  # 환경변수로 프로파일 설정
 
   application:
     name: tjp
@@ -11,15 +11,19 @@ spring:
      driver-class-name: org.postgresql.Driver
      username: ${DB_USERNAME}
      password: ${DB_PASSWORD}
+     # 연결 풀 기본 설정 (prod에서 오버라이드)
+     hikari:
+       maximum-pool-size: 10
+       minimum-idle: 2
 
   jpa:
     hibernate:
-      ddl-auto: update  # ?? ??? create ?? update, ?? ??? none
-    show-sql: true
+      ddl-auto: ${DDL_AUTO:update}  # 환경별로 다르게 설정  # ?? ??? create ?? update, ?? ??? none
+    show-sql: ${SHOW_SQL:true}      # 환경별로 다르게 설정
     database-platform: org.hibernate.dialect.PostgreSQLDialect  # PostgreSQLDialect? ??? ?
     properties:
       hibernate:
-        format_sql: true
+        format_sql: ${FORMAT_SQL:true}
 
   jackson:
     time-zone: Asia/Seoul
@@ -55,14 +59,20 @@ spring:
             enable: true
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+  # 운영환경을 위한 추가 설정
+  error:
+    include-stacktrace: ${INCLUDE_STACKTRACE:on_param}  # 운영에서는 never
+    servlet:
+      context-path: ${CONTEXT_PATH:}
 
 logging:
   level:
-    org.hibernate.SQL: debug                     # ?? SQL ?? ??
-    org.hibernate.type.descriptor.sql.BasicBinder: trace  # ???? ?????? ???
-    com.tj.tjp: DEBUG
-    org.springframework.security: DEBUG
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:debug}                     # ?? SQL ?? ??
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_BINDER:trace}  # ???? ?????? ???
+    com.tj.tjp: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:DEBUG}
+    root: ${LOG_LEVEL_ROOT:INFO}
 
 frontend:
   redirect-urls:
@@ -77,38 +87,48 @@ frontend:
     error: ${FRONTEND_BASE_URL}/error
   allowed-origins:
     - ${FRONTEND_BASE_URL}
+    # 운영환경에서 추가 도메인이 필요한 경우
+    # - ${ADDITIONAL_ALLOWED_ORIGINS:}
 
 app:
   jwt:
     # 토큰 서명에 사용할 비밀 키
     secret: ${JWT_SECRET_KEY}
     # AccessToken 유효기간 (밀리초 단위)
-    access-token-ttl: 600000        # 10분
+    access-token-ttl: ${JWT_ACCESS_TTL:600000}        # 10분
     # RefreshToken 유효기간 (밀리초 단위)
-    refresh-token-ttl: 604800000    # 7일
+    refresh-token-ttl: ${JWT_REFRESH_TTL:604800000}    # 7일
     # 토큰 발급자(issuer)
     issuer: tjp-backend
     # (선택) 필터 전략: header, cookie, hybrid 중 하나
-    strategy: header
+    strategy: ${JWT_STRATEGY:header}
 
   one-time-jwt:
     # 일회용 링크 토큰 전용 시크릿 키 (액세스·리프레시와는 별도)
     secret: ${ONE_TIME_JWT_SECRET_KEY}
     # 일회용 링크 토큰 만료 시간(분 단위)
-    expiry-minutes: 10
+    expiry-minutes: ${ONE_TIME_JWT_EXPIRY:10}
 
   oauth2:
     state:
       secret-key: ${OAUTH2_STATE_SECRET_KEY}
-      expiry-minutes: 5
+      expiry-minutes: ${OAUTH2_STATE_EXPIRY:5}
 
   auth:
-    verification-grace-minutes: 10080
+    verification-grace-minutes: ${VERIFICATION_GRACE_MINUTES:10080}
 
 #  crypto:
 #    secret-key: ${CRYPTO_SECRET_KEY}
 
-#  cookie:
-#    secure: false # prod일시 true
-#    same-site: None
+  cookie:
+    secure: ${COOKIE_SECURE:false} # prod일시 true
+    same-site: ${COOKIE_SAME_SITE:Lax} # prod일시 None?
+
+# 운영환경 모니터링을 위한 actuator 설정
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: ${ACTUATOR_ENDPOINTS:health,info}
 

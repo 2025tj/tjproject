@@ -132,3 +132,12 @@ management:
       exposure:
         include: ${ACTUATOR_ENDPOINTS:health,info}
 
+springdoc:
+  swagger-ui:
+    operations-sorter: method
+    display-request-duration: true
+  api-docs:
+    groups:
+      enabled: true
+  default-produces-media-type: application/json
+  paths-to-match: /api/**

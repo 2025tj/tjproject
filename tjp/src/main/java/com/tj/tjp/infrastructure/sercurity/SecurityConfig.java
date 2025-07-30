@@ -63,11 +63,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //    - "/api/users/me" 경로는 인증된 사용자만 접근 허용
+                        .requestMatchers("/api/subscription/test/**").permitAll()  // 이것을 먼저
                         .requestMatchers(
                                 "/api/users/me",
                                 "/api/users/pending-social-link",
                                 "/api/email/resend-verification",
-                                "/oauth2/link-complete/**"
+                                "/oauth2/link-complete/**",
+                                "/api/subscription/**"
                         ).authenticated()
                         //    - "/api/auth/**" 경로는 모두 허용 (회원가입·로그인 등)
                         .requestMatchers(

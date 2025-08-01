@@ -2,10 +2,10 @@ package com.tj.tjp.domain.subscription.dto;
 
 import com.tj.tjp.domain.subscription.entity.PlanType;
 import com.tj.tjp.domain.subscription.entity.Subscription;
+import com.tj.tjp.domain.subscription.entity.SubscriptionStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
-
 import java.time.LocalDateTime;
 
 @Getter
@@ -20,6 +20,8 @@ public class SubscriptionResponse {
     private LocalDateTime endDate;
     @Schema(description = "활성 구독 여부", example = "true")
     private boolean isActive;
+    @Schema(description = "구독 상태", example = "ACTIVE")
+    private SubscriptionStatus status;
 
     public static SubscriptionResponse from(Subscription subscription) {
         return SubscriptionResponse.builder()
@@ -27,6 +29,7 @@ public class SubscriptionResponse {
                 .startDate(subscription.getStartDate())
                 .endDate(subscription.getEndDate())
                 .isActive(subscription.isActive())
+                .status(subscription.getStatus())
                 .build();
     }
 }

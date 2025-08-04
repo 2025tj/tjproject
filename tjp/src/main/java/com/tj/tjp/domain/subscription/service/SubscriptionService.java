@@ -74,10 +74,25 @@ public class SubscriptionService {
     }
 
     public SubscriptionResponse getSubscriptionDetails(User user) {
+        log.info("[getSubscriptionDetails] user={}", user);
         return subscriptionRepository.findByUserAndIsActiveTrue(user)
-                .filter(Subscription::isValid)
-                .map(SubscriptionResponse::from)
-                .orElseThrow(() -> new RuntimeException("구독 정보가 없습니다."));
+                .filter(sub -> {
+                    log.info(">> Subscription 조회 결과: id={}, plan={}",
+                            sub.getId(),
+                            sub.getPlan() != null? sub.getPlan().getName(): null);
+                    return sub.isValid();
+                })
+                .map(sub -> {
+                    log.info(">> 유효한 구독 변환 시작: id={}", sub.getId());
+                    return SubscriptionResponse.from(sub);
+                })
+                .orElseThrow(() -> {
+                    log.warn(">> 유효한 구독 정보 없음 (user={})", user.getId());
+                    return new RuntimeException("구독 정보가 없습니다.");
+                });
+//                .filter(Subscription::isValid)
+//                .map(SubscriptionResponse::from)
+//                .orElseThrow(() -> new RuntimeException("구독 정보가 없습니다."));
     }
 
     // 즉시 해지 (환불 등)
@@ -105,6 +120,19 @@ public class SubscriptionService {
 
         subscription.cancel();
         subscriptionRepository.save(subscription);
+    }
+
+    @Transactional
+    public void revertCancel(User user) {
+        Subscription sub = subscriptionRepository
+                .findByUserAndStatus(user, SubscriptionStatus.CANCELLED)
+                .orElseThrow(() -> new RuntimeException("활성 구독 없음"));
+
+        if (!sub.getStatus().equals(SubscriptionStatus.CANCELLED)) {
+            throw new RuntimeException("해지 예약 상태가 아님");
+        }
+        sub.revertCancel();
+        subscriptionRepository.save(sub);
     }
 
     // 기존 활성 구독 비활성화 (헬퍼 메서드)

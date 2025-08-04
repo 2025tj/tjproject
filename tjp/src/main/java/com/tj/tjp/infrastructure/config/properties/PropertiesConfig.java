@@ -8,7 +8,8 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties({
         FrontendProperties.class,
         CookieProperties.class,
-        JwtProperties.class
+        JwtProperties.class,
+        IamportConfig.class,
 })
 public class PropertiesConfig {
 }

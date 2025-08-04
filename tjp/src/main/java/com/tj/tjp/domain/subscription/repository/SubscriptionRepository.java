@@ -19,4 +19,6 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     @Query("SELECT s FROM Subscription s WHERE s.endDate < :now AND s.status IN :statuses")
     List<Subscription> findExpiredSubscriptions(LocalDateTime now, List<SubscriptionStatus> statuses);
+
+    Optional<Subscription> findByUserAndStatus(User user, SubscriptionStatus status);
 }

@@ -25,7 +25,7 @@ public class SubscriptionResponse {
 
     public static SubscriptionResponse from(Subscription subscription) {
         return SubscriptionResponse.builder()
-                .plan(PlanDto.from(subscription.getPlan()))
+                .plan(subscription.getPlan() != null ? PlanDto.from(subscription.getPlan()) : null)
                 .startDate(subscription.getStartDate())
                 .endDate(subscription.getEndDate())
                 .isActive(subscription.isActive())

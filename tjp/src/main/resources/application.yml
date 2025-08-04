@@ -58,6 +58,10 @@ spring:
           starttls:
             enable: true
 
+iamport:
+  api-key: ${IAMPORT_API_KEY:2102605422132363}
+  api-secret: ${IAMPORT_API_SECRET:qV4T3ld3kk18ei3ok4WawSTNxR2pgMrCADqRPdr3eNL2pfoo8vbBozN4d3H75V7OaWn7Y5uipszuYIc2}
+
 server:
   port: ${SERVER_PORT:8080}
   # 운영환경을 위한 추가 설정

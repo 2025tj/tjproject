@@ -77,6 +77,15 @@ public class Subscription {
         }
     }
 
+    public void revertCancel() {
+        if (this.status == SubscriptionStatus.CANCELLED) {
+            this.status = SubscriptionStatus.ACTIVE;
+            this.isActive = true;
+        } else {
+            throw new IllegalArgumentException("해지 예약 상태가 아닌 구독은 복원할 수 없습니다.");
+        }
+    }
+
     public void expire() {
         this.status = SubscriptionStatus.EXPIRED;
         this.isActive = false;

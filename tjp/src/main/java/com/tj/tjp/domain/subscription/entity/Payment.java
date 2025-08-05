@@ -49,6 +49,7 @@ public class Payment {
     // 취소/환불 일시
     private LocalDateTime cancelledAt;
 
+    // ---상태변경메서드---
     public void markPaid() {
         this.status = PaymentStatus.PAID;
         this.paidAt = LocalDateTime.now();
@@ -57,6 +58,33 @@ public class Payment {
     public void markCancelled() {
         this.status = PaymentStatus.CANCELLED;
         this.cancelledAt = LocalDateTime.now();
+    }
+
+    public void markFailed() {
+        this.status = PaymentStatus.FAILED;
+        this.cancelledAt = null;
+    }
+
+    public void updateStatus(PaymentStatus newStatus) {
+        if (newStatus == null) return;
+
+        if (this.status == newStatus) {
+            return;
+        }
+        this.status = newStatus;
+
+        switch (newStatus) {
+            case PAID -> {
+                if (this.paidAt == null) {
+                    this.paidAt = LocalDateTime.now();
+                }
+            }
+            case CANCELLED -> {
+                if (this.cancelledAt == null) {
+                    this.cancelledAt = LocalDateTime.now();
+                }
+            }
+        }
     }
 
     public static Payment of(User user, Subscription subscription,
@@ -69,7 +97,7 @@ public class Payment {
                 .merchantUid(merchantUid)
                 .amount(amount)
                 .status(status)
-                .paidAt(LocalDateTime.now())
+                .paidAt(status == PaymentStatus.PAID ? LocalDateTime.now() : null)
                 .build();
     }
 }

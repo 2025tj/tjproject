@@ -1,19 +1,24 @@
 package com.tj.tjp.domain.subscription.service;
 
+import com.siot.IamportRestClient.IamportClient;
+import com.siot.IamportRestClient.request.CancelData;
+import com.siot.IamportRestClient.response.IamportResponse;
+import com.tj.tjp.domain.subscription.dto.PaymentResponse;
 import com.tj.tjp.domain.subscription.dto.SubscriptionResponse;
-import com.tj.tjp.domain.subscription.entity.Plan;
-import com.tj.tjp.domain.subscription.entity.PlanType;
-import com.tj.tjp.domain.subscription.entity.Subscription;
-import com.tj.tjp.domain.subscription.entity.SubscriptionStatus;
+import com.tj.tjp.domain.subscription.dto.SubscriptionStatusResponse;
+import com.tj.tjp.domain.subscription.entity.*;
+import com.tj.tjp.domain.subscription.repository.PaymentRepository;
 import com.tj.tjp.domain.subscription.repository.PlanRepository;
 import com.tj.tjp.domain.subscription.repository.SubscriptionRepository;
 import com.tj.tjp.domain.user.entity.User;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,6 +29,8 @@ public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final PlanRepository planRepository;
+    private final IamportClient iamportClient;
+    private final PaymentRepository paymentRepository;
 
     // 구독 생성
     public Subscription createSubscription(User user, PlanType planType) {
@@ -73,6 +80,27 @@ public class SubscriptionService {
                 .orElse(false);
     }
 
+//    public SubscriptionResponse getSubscriptionDetails(User user) {
+//        log.info("[getSubscriptionDetails] user={}", user);
+//        return subscriptionRepository.findByUserAndIsActiveTrue(user)
+//                .filter(sub -> {
+//                    log.info(">> Subscription 조회 결과: id={}, plan={}",
+//                            sub.getId(),
+//                            sub.getPlan() != null? sub.getPlan().getName(): null);
+//                    return sub.isValid();
+//                })
+//                .map(sub -> {
+//                    log.info(">> 유효한 구독 변환 시작: id={}", sub.getId());
+//                    return SubscriptionResponse.from(sub);
+//                })
+//                .orElseThrow(() -> {
+//                    log.warn(">> 유효한 구독 정보 없음 (user={})", user.getId());
+//                    return new RuntimeException("구독 정보가 없습니다.");
+//                });
+////                .filter(Subscription::isValid)
+////                .map(SubscriptionResponse::from)
+////                .orElseThrow(() -> new RuntimeException("구독 정보가 없습니다."));
+//    }
     public SubscriptionResponse getSubscriptionDetails(User user) {
         log.info("[getSubscriptionDetails] user={}", user);
         return subscriptionRepository.findByUserAndIsActiveTrue(user)
@@ -86,13 +114,10 @@ public class SubscriptionService {
                     log.info(">> 유효한 구독 변환 시작: id={}", sub.getId());
                     return SubscriptionResponse.from(sub);
                 })
-                .orElseThrow(() -> {
+                .orElseGet(() -> {
                     log.warn(">> 유효한 구독 정보 없음 (user={})", user.getId());
-                    return new RuntimeException("구독 정보가 없습니다.");
+                    return null;
                 });
-//                .filter(Subscription::isValid)
-//                .map(SubscriptionResponse::from)
-//                .orElseThrow(() -> new RuntimeException("구독 정보가 없습니다."));
     }
 
     // 즉시 해지 (환불 등)
@@ -179,5 +204,50 @@ public class SubscriptionService {
         return subscriptionRepository.findByEndDateBeforeAndStatusIn(
                 LocalDateTime.now(),
                 List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED));
+    }
+
+    @Transactional
+    public SubscriptionStatusResponse unsubscribeAndRefund(User user, Integer cancelAmount) {
+        Subscription subscription = subscriptionRepository.findByUserAndIsActiveTrue(user)
+                .orElse(null);
+        if (subscription == null) return SubscriptionStatusResponse.none();
+        Payment payment = paymentRepository.findBySubscription(subscription)
+                .orElseThrow(() -> new RuntimeException("구독 결제 내역을 찾을 수 없습니다."));
+        if (payment.getStatus() == PaymentStatus.CANCELLED) {
+            return SubscriptionStatusResponse.from(subscription);
+        }
+        //아임 포트 환불처리
+        BigDecimal refundAmount = (cancelAmount != null) ? BigDecimal.valueOf(cancelAmount) : null;
+        CancelData cancelData = new CancelData(payment.getImpUid(), true, refundAmount);
+        try {
+            IamportResponse<com.siot.IamportRestClient.response.Payment> cancelResponse =
+                    iamportClient.cancelPaymentByImpUid(cancelData);
+            if (cancelResponse == null) {
+                throw new RuntimeException("아임포트 환불 실패: 응답이 null입니다.");
+            }
+            if (cancelResponse.getResponse() == null) {
+                throw new RuntimeException("아임 포트 환불 실패: 응답 없음");
+            }
+            String status = cancelResponse.getResponse().getStatus();
+            if (!"cancelled".equalsIgnoreCase(status)) {
+                throw new RuntimeException("아임포트 환불 실패: 상태=" + status);
+            }
+
+            payment.updateStatus(PaymentStatus.CANCELLED);
+            subscription.expire();
+
+            log.info("[Unsubscribe+Refund] user={}, status=CANCELLED", user.getEmail());
+            return SubscriptionStatusResponse.from(subscription);
+        } catch (Exception e) {
+            log.error("[Refund] 아임포트 환불 처리 중 예외 발생", e);
+            throw new RuntimeException("환불 처리 실패: "+e.getMessage(), e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public SubscriptionStatusResponse getSubscriptionStatus(User user) {
+        Subscription subscription = subscriptionRepository.findByUserAndIsActiveTrue(user)
+                .orElse(null);
+        return SubscriptionStatusResponse.from(subscription);
     }
 }

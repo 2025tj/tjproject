@@ -1,8 +1,10 @@
 package com.tj.tjp.domain.subscription.controller;
 
 import com.tj.tjp.domain.auth.security.principal.LocalUserPrincipal;
+import com.tj.tjp.domain.subscription.dto.PaymentResponse;
 import com.tj.tjp.domain.subscription.dto.SubscriptionRequest;
 import com.tj.tjp.domain.subscription.dto.SubscriptionResponse;
+import com.tj.tjp.domain.subscription.dto.SubscriptionStatusResponse;
 import com.tj.tjp.domain.subscription.service.SubscriptionService;
 import com.tj.tjp.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -53,13 +56,21 @@ public class SubscriptionController {
         return ResponseEntity.ok(Map.of("isActive", active));
     }
 
+//    @GetMapping("/me")
+//    @Operation(summary = "구독 상세 정보 조회", description = "현재 로그인한 유저의 구독정보를 반환")
+//    @ApiResponse(responseCode = "200", description = "성공", content = @Content(schema = @Schema(implementation = SubscriptionResponse.class)))
+//    public ResponseEntity<SubscriptionResponse> getMySubscription(@AuthenticationPrincipal LocalUserPrincipal principal) {
+//        log.info(">> [getMySubscription] user={}", principal.getUser());
+//        SubscriptionResponse response = subscriptionService.getSubscriptionDetails(principal.getUser());
+//        return ResponseEntity.ok(response);
+//    }
     @GetMapping("/me")
     @Operation(summary = "구독 상세 정보 조회", description = "현재 로그인한 유저의 구독정보를 반환")
     @ApiResponse(responseCode = "200", description = "성공", content = @Content(schema = @Schema(implementation = SubscriptionResponse.class)))
-    public ResponseEntity<SubscriptionResponse> getMySubscription(@AuthenticationPrincipal LocalUserPrincipal principal) {
+    public ResponseEntity<com.tj.tjp.common.dto.ApiResponse<SubscriptionStatusResponse>> getMySubscription(@AuthenticationPrincipal LocalUserPrincipal principal) {
         log.info(">> [getMySubscription] user={}", principal.getUser());
-        SubscriptionResponse response = subscriptionService.getSubscriptionDetails(principal.getUser());
-        return ResponseEntity.ok(response);
+        SubscriptionStatusResponse response = subscriptionService.getSubscriptionStatus(principal.getUser());
+        return ResponseEntity.ok(com.tj.tjp.common.dto.ApiResponse.<SubscriptionStatusResponse>success(response));
     }
 
     @DeleteMapping

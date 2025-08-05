@@ -63,6 +63,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //    - "/api/users/me" 경로는 인증된 사용자만 접근 허용
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/subscription/test/**").permitAll()  // 이것을 먼저
                         .requestMatchers("/api/payments/webhook").permitAll()
                         .requestMatchers("/api/payment/webhook").permitAll()

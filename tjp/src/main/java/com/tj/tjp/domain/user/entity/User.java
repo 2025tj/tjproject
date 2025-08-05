@@ -10,8 +10,8 @@ import java.util.Set;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+//@AllArgsConstructor
+//@Builder
 @Table(name="users")
 public class User {
 
@@ -35,21 +35,21 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id")  // FK 컬럼명 명시
     )
     @Column(name = "role")  // 컬럼명 명시
-    @Builder.Default
+//    @Builder.Default
     private Set<String> roles = new HashSet<>();
 
     @Column(name="created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name="email_verified", nullable = false)
-    @Builder.Default
+//    @Builder.Default
     private boolean emailVerified = false;
 
     @Column(name="email_verified_at", nullable = true)
     private LocalDateTime emailVerifiedAt;
 
     @Column(name="status", nullable = false, length = 20)
-    @Builder.Default
+//    @Builder.Default
     private String status = UserStatus.ACTIVE.name(); // ACTIVE, INACTIVE, BLOCKED 등
 
     public void updatePassword(String password) {
@@ -63,6 +63,16 @@ public class User {
     public void verifyEmail() {
         this.emailVerified = true;
         this.emailVerifiedAt = LocalDateTime.now();
+    }
+    /**
+     * 빌더를 생성자에만 적용 -> id, createdAt 등 JPA 관리 필드 제외
+     */
+    @Builder
+    public User(String email, String password, String nickname, Set<String> roles) {
+        this.email = email;
+        this.password = password;
+        this.nickname = nickname;
+        this.roles = (roles != null) ? roles : new HashSet<>();
     }
 
     /** 사용자 활성화 처리 */

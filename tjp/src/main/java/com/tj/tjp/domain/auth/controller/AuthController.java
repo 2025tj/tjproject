@@ -24,6 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @Slf4j
 @Tag(name = "Authentication", description = "인증 관련 API")
@@ -66,7 +68,10 @@ public class AuthController {
     ) {
         try {
             LoginResult result = authService.login(request.email(), request.password(), response);
-            return ResponseEntity.ok(ApiResponse.success("로그인이 완료되었습니다.", result));
+            //AuthService에서 저장한 메세지 읽기
+            String message = (String) RequestContextHolder.currentRequestAttributes()
+                    .getAttribute("loginMessage", RequestAttributes.SCOPE_REQUEST);
+            return ResponseEntity.ok(ApiResponse.success(message, result));
         } catch (BadCredentialsException e) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)

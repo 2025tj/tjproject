@@ -126,7 +126,7 @@ app:
 
   cookie:
     secure: ${COOKIE_SECURE:false} # prod일시 true
-    same-site: ${COOKIE_SAME_SITE:Lax} # prod일시 None?
+    same-site: ${COOKIE_SAME_SITE:None} # prod일시 None? Lax?
 
 # 운영환경 모니터링을 위한 actuator 설정
 management:

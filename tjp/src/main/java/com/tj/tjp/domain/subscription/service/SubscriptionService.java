@@ -3,15 +3,14 @@ package com.tj.tjp.domain.subscription.service;
 import com.siot.IamportRestClient.IamportClient;
 import com.siot.IamportRestClient.request.CancelData;
 import com.siot.IamportRestClient.response.IamportResponse;
-import com.tj.tjp.domain.subscription.dto.PaymentResponse;
 import com.tj.tjp.domain.subscription.dto.SubscriptionResponse;
 import com.tj.tjp.domain.subscription.dto.SubscriptionStatusResponse;
 import com.tj.tjp.domain.subscription.entity.*;
 import com.tj.tjp.domain.subscription.repository.PaymentRepository;
 import com.tj.tjp.domain.subscription.repository.PlanRepository;
+import com.tj.tjp.domain.subscription.repository.RefundRequestRepository;
 import com.tj.tjp.domain.subscription.repository.SubscriptionRepository;
 import com.tj.tjp.domain.user.entity.User;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,6 +30,7 @@ public class SubscriptionService {
     private final PlanRepository planRepository;
     private final IamportClient iamportClient;
     private final PaymentRepository paymentRepository;
+    private final RefundRequestRepository refundRequestRepository;
 
     // 구독 생성
     public Subscription createSubscription(User user, PlanType planType) {
@@ -249,5 +249,26 @@ public class SubscriptionService {
         Subscription subscription = subscriptionRepository.findByUserAndIsActiveTrue(user)
                 .orElse(null);
         return SubscriptionStatusResponse.from(subscription);
+    }
+
+    @Transactional
+    public void createRefundRequest(User user) {
+        Subscription sub = subscriptionRepository.findByUserAndIsActiveTrue(user)
+                .orElseThrow(() -> new RuntimeException("활성 구독 없음"));
+
+        // 기존 요청 중복 장지
+        if (refundRequestRepository.existsBySubscriptionAndStatus(sub, RefundStatus.REQUESTED)) {
+            throw new RuntimeException("이미 환불 요청이 존재합니다.");
+        }
+
+        RefundRequest request = RefundRequest.builder()
+                .user(user)
+                .subscription(sub)
+                .status(RefundStatus.REQUESTED)
+                .requestedAt(LocalDateTime.now())
+                .build();
+
+        refundRequestRepository.save(request);
+        sub.cancel();
     }
 }

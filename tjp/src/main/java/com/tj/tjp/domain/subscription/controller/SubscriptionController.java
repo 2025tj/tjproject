@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -95,5 +96,14 @@ public class SubscriptionController {
     public ResponseEntity<String> revertCancel(@AuthenticationPrincipal LocalUserPrincipal principal) {
         subscriptionService.revertCancel(principal.getUser());
         return ResponseEntity.ok("해지 예약이 취소되었습니다.");
+    }
+
+    @PostMapping("/refund-request")
+    @Operation(summary = "환불 요청 생성")
+    public ResponseEntity<com.tj.tjp.common.dto.ApiResponse<Void>> requestRefund(
+            @AuthenticationPrincipal LocalUserPrincipal principal
+    ) {
+        subscriptionService.createRefundRequest(principal.getUser());
+        return ResponseEntity.ok(com.tj.tjp.common.dto.ApiResponse.success("환불 요청이 접수되었습니다."));
     }
 }

@@ -2,6 +2,10 @@
 package com.tj.tjp.domain.auth.service;
 
 import com.tj.tjp.domain.auth.dto.login.LoginResult;
+import com.tj.tjp.domain.subscription.entity.PlanType;
+import com.tj.tjp.domain.subscription.entity.Subscription;
+import com.tj.tjp.domain.subscription.repository.SubscriptionRepository;
+import com.tj.tjp.domain.user.entity.User;
 import com.tj.tjp.event.EmailVerificationResendEvent;
 import com.tj.tjp.common.exception.EmailNotVerifiedException;
 import com.tj.tjp.domain.user.repository.UserRepository;
@@ -9,6 +13,7 @@ import com.tj.tjp.domain.auth.security.principal.AuthenticatedUser;
 import com.tj.tjp.domain.auth.security.service.TokenService;
 import com.tj.tjp.domain.social.service.SocialAccountService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,10 +24,16 @@ import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -32,6 +43,7 @@ public class AuthService {
     private final ApplicationEventPublisher eventPublisher;
     private final PasswordEncoder passwordEncoder;
     private final SocialAccountService socialAccountService;
+    private final SubscriptionRepository subscriptionRepository;
 
 
     @Value("${app.auth.verification-grace-minutes}")
@@ -42,41 +54,80 @@ public class AuthService {
      */
     @Transactional
     public LoginResult login(String email, String password, HttpServletResponse response) {
+        log.info("authService 로그인시도 : email={}", email);
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password)
         );
-        AuthenticatedUser user = (AuthenticatedUser) auth.getPrincipal();
-        List<String> roles = user.getUser().getRoles().stream().toList();
+        AuthenticatedUser principal = (AuthenticatedUser) auth.getPrincipal();
+        User user = principal.getUser();
+        log.info("login 인증 성공: userId={}, nickname={}, roles{}", user.getId(), user.getNickname(), user.getRoles());
+//        List<String> roles = new ArrayList<>(entity.getRoles());
 
         // 이메일 인증 유예기간 체크 및 상태 변경, 메일 재발송
-        if (!user.getUser().isEmailVerified()) {
+        if (!user.isEmailVerified()) {
 //            LocalDateTime expireLimit = user.getUser().getCreatedAt().plusDays(7);
-            LocalDateTime expireLimit = user.getUser().getCreatedAt().plusMinutes(gracePeriodMinutes);
+            LocalDateTime expireLimit = user.getCreatedAt().plusMinutes(gracePeriodMinutes);
+            log.warn("login 이메일 미인증: createAt={}, expireLimit={}", user.getCreatedAt(), expireLimit);
             if (LocalDateTime.now().isAfter(expireLimit)) {
+                log.error("login 이메일 인증 유예기간 만료 -> 계정 비활성화 처리");
                 // 상태 변경
-                user.getUser().deactivate();
-                userRepository.save(user.getUser());
-
+                user.deactivate();
+                userRepository.save(user);
                 // 인증 메일 재발송 이벤트 발행
-                eventPublisher.publishEvent(new EmailVerificationResendEvent(user.getUser()));
-
+                eventPublisher.publishEvent(new EmailVerificationResendEvent(user));
                 // 예외 던져 로그인 차단
                 throw new EmailNotVerifiedException("이메일 인증 유예기간이 만료되었습니다. 로그인 불가. 인증메일 재전송 완료.");
             }
         }
 
-        // 1) 액세스 토큰은 헤더에만
-        tokenService.issueAccessTokenHeader(response, user.getEmail(), roles);
-
-        // 2) 리프레시 토큰은 HttpOnly 쿠키에만
+        log.info("login 토큰 발급 시작");
+        // jwt 발급
+        // 액세스 토큰은 헤더에만
+        tokenService.issueAccessTokenHeader(response, user.getEmail(), new ArrayList<>(user.getRoles()));
+        // 리프레시 토큰은 HttpOnly 쿠키에만
         tokenService.issueRefreshTokenCookie(response, user.getEmail());
+        log.info("login 토큰 발급 완료");
 
-        // 2) 경고 메시지 판단
-        String warning = null;
-        if (!user.getUser().isEmailVerified()) {
-            warning = "이메일 인증이 필요합니다. 7일 이내 인증하지 않으면 계정이 비활성화됩니다.";
+        // 활성 구독 조회
+        log.info("login 구독 조회 시작");
+        Optional<Subscription> activeSub = subscriptionRepository.findByUserAndIsActiveTrue(user);
+        log.info("login 구독 조회 Optional 반환 : {}", activeSub);
+        Subscription sub = activeSub.orElse(null);
+        log.info("login 구독 Optional 처리 완료: {}", sub);
+        boolean subscribed = sub != null;
+        PlanType planType = sub != null ? sub.getPlan().getName() : null;
+        LocalDateTime endDate = sub != null ? sub.getEndDate() : null;
+        log.info("login 구독 조회: subscribed={}, planType={}, endDate={}",
+                sub != null ? true : null, sub !=null ? planType : null, sub!=null ? endDate : null);
+
+        // 경고 메시지 판단
+        String loginMessage = "로그인이 완료되었습니다.";
+        if (!user.isEmailVerified()) {
+            loginMessage = "이메일 인증이 필요합니다. 7일 이내 인증하지 않으면 계정이 비활성화됩니다.";
+        } else if (sub!= null && sub.getEndDate() != null) {
+            long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), sub.getEndDate());
+            if (daysLeft <= 7 && daysLeft >= 0) {
+                loginMessage = "구독이 곧 만료됩니다. 남은 기간: " + daysLeft + "일";
+            }
         }
-        return new LoginResult(user.getEmail(), "로그인 성공", warning);
+
+        //LoginResult
+        LoginResult result = LoginResult.builder()
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .roles(user.getRoles())
+                .emailVerified(user.isEmailVerified())
+                .subscribed(subscribed)
+                .planType(planType)
+                .subEndDate(endDate)
+                .build();
+
+        // message를 reqeust attribute로 전달
+        RequestContextHolder.currentRequestAttributes()
+                .setAttribute("loginMessage", loginMessage, RequestAttributes.SCOPE_REQUEST);
+        log.info("login 최종 로그인 성공: email={}, subscribed={}, emailVerifed={}",
+                user.getEmail(), subscribed, user.isEmailVerified());
+        return result;
     }
 
 //    /**

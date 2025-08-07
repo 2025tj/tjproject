@@ -34,6 +34,7 @@ public class RefundRequest {
 
     public void approve(Integer amount) {
         this.status = RefundStatus.APPROVED;
+        this.approvedAmount = amount;
         this.processedAt = LocalDateTime.now();
     }
 

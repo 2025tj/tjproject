@@ -102,8 +102,9 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             @AuthenticationPrincipal AuthenticatedUser userPrincipal,
+            HttpServletRequest request,
             HttpServletResponse response) {
-        tokenService.deleteRefreshToken(userPrincipal.getUser().getEmail(), response);
+        tokenService.deleteRefreshToken(request, response);
         return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다."));
     }
 

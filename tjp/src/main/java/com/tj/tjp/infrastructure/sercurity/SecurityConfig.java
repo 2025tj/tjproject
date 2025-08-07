@@ -67,6 +67,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/subscription/test/**").permitAll()  // 이것을 먼저
                         .requestMatchers("/api/payments/webhook").permitAll()
                         .requestMatchers("/api/payment/webhook").permitAll()
+                        .requestMatchers("/redis-test/**").permitAll()
                         .requestMatchers(
                                 "/api/users/me",
                                 "/api/users/pending-social-link",

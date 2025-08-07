@@ -1,11 +1,14 @@
 package com.tj.tjp.domain.auth.security.service;
 
+import com.tj.tjp.domain.auth.blacklist.TokenBlacklistService;
 import com.tj.tjp.infrastructure.config.properties.CookieProperties;
 import com.tj.tjp.infrastructure.config.properties.FrontendProperties;
 import com.tj.tjp.domain.auth.security.jwt.JwtProvider;
 import com.tj.tjp.common.util.TokenUtils;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
@@ -13,12 +16,14 @@ import org.springframework.stereotype.Service;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TokenService {
     private final JwtProvider jwtProvider;
     private final FrontendProperties frontendProperties;
     private final CookieProperties cookieProperties;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /** Access 토큰만 헤더로 발급 */
     public void issueAccessTokenHeader(HttpServletResponse response, String email, List<String> roles) {
@@ -55,6 +60,7 @@ public class TokenService {
      */
     public void refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = TokenUtils.getRefreshToken(request);
+        log.info("Received refresh token: {}", refreshToken);
         if (refreshToken == null || !jwtProvider.validateRefreshToken(refreshToken)) {
             throw new RuntimeException("Invalid or missing refresh token");
         }
@@ -64,9 +70,17 @@ public class TokenService {
     }
 
     // ✅ 리프레시 토큰 삭제 (DB + 쿠키)
-    public void deleteRefreshToken(String userId, HttpServletResponse response) {
+    public void deleteRefreshToken(HttpServletRequest request, HttpServletResponse response) {
         // 1. DB에서 삭제(redis 구현 필요)
 //        refreshTokenRepository.deleteByUserId(userId);
+        String refreshToken = extractRefreshTokenFromCookie(request);
+        if (refreshToken != null && jwtProvider.validateRefreshToken(refreshToken)) {
+            long ttl = jwtProvider.getRefreshTokenRemainingMillis(refreshToken);
+            if (ttl > 0) {
+                long safeTtl = Math.max(ttl, 1000);
+                tokenBlacklistService.blacklistRefreshToken(refreshToken, safeTtl);
+            }
+        }
 
         // 2. 쿠키 삭제
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
@@ -96,4 +110,14 @@ public class TokenService {
         return jwtProvider.getEmailFromToken(token);
     }
 
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
+    }
 }

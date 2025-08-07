@@ -128,5 +128,21 @@ public class JwtProvider {
                 : List.of();
     }
 
+    public long getRefreshTokenRemainingMillis(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            Date expiration = claims.getExpiration();
+            long now = System.currentTimeMillis();
+            return expiration.getTime() - now;
+        } catch (Exception e) {
+            log.warn("만료 시간 추출 실패: {}", e.getMessage());
+            return 0;
+        }
+    }
+
 
 }

@@ -26,6 +26,9 @@ repositories {
 }
 
 dependencies {
+	//Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.apache.commons:commons-pool2'
 	// Iamport
 	implementation 'com.github.iamport:iamport-rest-client-java:0.2.21'
 	// OpenAPI 3.0 (Swagger 3.x) for Spring Boot 3.x

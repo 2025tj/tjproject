@@ -2,6 +2,7 @@ package com.tj.tjp.common.exception;
 
 import com.tj.tjp.common.dto.ApiResponse;
 import com.tj.tjp.common.dto.ErrorResponse;
+import com.tj.tjp.domain.auth.security.exception.RefreshTokenReuseDetectedException;
 import com.tj.tjp.dto.error.EmailVerificationErrorResponse;
 import com.tj.tjp.dto.error.OAuth2ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(RefreshTokenReuseDetectedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleReuse() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("REAUTH_REQUIRED", "세션 이상 동작이 감지됐습니다. 다시 로그인해주세요."));
+    }
 
     // === OAuth2 관련 예외 (전용 DTO 사용) ===
 

@@ -1,7 +1,9 @@
 package com.tj.tjp.common.util;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TokenUtils {
     private static final String ACCESS_HEADER    = "Access-Token";
     private static final String REFRESH_HEADER   = "Refresh-Token";
@@ -50,11 +52,11 @@ public class TokenUtils {
 //    }
     public static String getRefreshToken(HttpServletRequest req) {
         String token = getRefreshTokenFromHeader(req);
-        System.out.println("🔍 Header에서 가져온 Refresh Token: " + token);
+        log.info("🔍 Header에서 가져온 Refresh Token: " + token);
 
         if (token == null || token.isBlank()) {
             token = getRefreshTokenFromCookie(req);
-            System.out.println("🔍 Cookie에서 가져온 Refresh Token: " + token);
+            log.info("🔍 Cookie에서 가져온 Refresh Token: " + token);
         }
 
         return token;

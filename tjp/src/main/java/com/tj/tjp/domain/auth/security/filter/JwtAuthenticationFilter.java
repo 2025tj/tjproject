@@ -1,5 +1,6 @@
 package com.tj.tjp.domain.auth.security.filter;
 
+import com.tj.tjp.domain.auth.blacklist.service.TokenBlacklistService;
 import com.tj.tjp.domain.user.entity.User;
 import com.tj.tjp.common.exception.EmailNotVerifiedException;
 import com.tj.tjp.domain.user.repository.UserRepository;
@@ -26,6 +27,8 @@ import java.time.LocalDateTime;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // JWT 생성/검증을 담당하는 컴포넌트
     private final JwtProvider jwtProvider;
+
+    private final TokenBlacklistService tokenBlacklistService;
 
     // 사용자 조회를 위한 리포지토리
     private final UserRepository userRepository;
@@ -54,6 +57,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 3) 토큰이 존재하면 검증 및 인증 처리
         if (token != null && jwtProvider.validateToken(token)) {
             try {
+                // 블랙리스트 토큰이면 예외 처리
+                if (tokenBlacklistService.isBlacklisted(token)) {
+                    log.warn("블랙리스트에 등록된 토큰입니다. 인증 거부");
+                    throw new RuntimeException("블랙리스트 토큰으로 인증 불가");
+                }
                 // 토큰에서 이메일(주체)을 추출
                 String email = jwtProvider.getEmailFromToken(token);
                 // DB에서 사용자 정보 조회

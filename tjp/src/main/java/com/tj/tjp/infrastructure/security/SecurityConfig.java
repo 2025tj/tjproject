@@ -1,4 +1,4 @@
-package com.tj.tjp.infrastructure.sercurity;
+package com.tj.tjp.infrastructure.security;
 
 //import com.tj.tjp.security.CustomOAuth2FailureHandler;
 //import com.tj.tjp.security.service.CustomOAuth2UserService;
@@ -11,7 +11,6 @@ import com.tj.tjp.infrastructure.config.properties.FrontendProperties;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

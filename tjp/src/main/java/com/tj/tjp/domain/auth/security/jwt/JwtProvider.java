@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
@@ -42,12 +44,32 @@ public class JwtProvider {
     /**
      * 생성된 후에 secretKey를 초기화합니다.
      */
+//    @PostConstruct
+//    public void init() {
+//        this.secretKey = Keys.hmacShaKeyFor(
+//                jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8)
+//        );
+//    }
     @PostConstruct
     public void init() {
-        this.secretKey = Keys.hmacShaKeyFor(
-                jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8)
-        );
+        String secret = jwtProperties.getSecret();
+        log.info("Loaded JWT secret from properties: [{}]", secret);
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secret);
+            log.info("Decoded secret length: {}", keyBytes.length);
+        } catch (Exception e) {
+            log.error("Failed to decode JWT secret from base64", e);
+            throw e; // 애플리케이션 시작 실패 유도
+        }
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
+//    @PostConstruct
+//    public void init() {
+//        byte[] keyBytes = Base64.getUrlDecoder().decode(jwtProperties.getSecret());
+//        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+//    }
+
 
     /**
      * AccessToken 생성 (subject: email, claim: roles)

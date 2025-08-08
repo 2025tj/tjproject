@@ -58,6 +58,16 @@ spring:
           starttls:
             enable: true
 
+  redis:
+    host: localhost
+    port: 6379
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 2
+        max-wait: 1000ms
+
 iamport:
   api-key: ${IAMPORT_API_KEY}
   api-secret: ${IAMPORT_API_SECRET}
@@ -97,7 +107,8 @@ frontend:
 app:
   jwt:
     # 토큰 서명에 사용할 비밀 키
-    secret: ${JWT_SECRET_KEY}
+#    secret: ${JWT_SECRET_KEY}
+    secret: ${APP_JWT_SECRET}
     # AccessToken 유효기간 (밀리초 단위)
     access-token-ttl: ${JWT_ACCESS_TTL:600000}        # 10분
     # RefreshToken 유효기간 (밀리초 단위)

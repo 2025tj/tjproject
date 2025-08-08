@@ -64,10 +64,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResult>> loginLocal(
             @RequestBody @Valid LoginRequest request,
+            HttpServletRequest httpServletRequest,
             HttpServletResponse response
     ) {
         try {
-            LoginResult result = authService.login(request.email(), request.password(), response);
+            LoginResult result = authService.login(request.email(), request.password(), httpServletRequest, response);
             //AuthService에서 저장한 메세지 읽기
             String message = (String) RequestContextHolder.currentRequestAttributes()
                     .getAttribute("loginMessage", RequestAttributes.SCOPE_REQUEST);

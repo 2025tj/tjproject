@@ -12,6 +12,7 @@ import com.tj.tjp.domain.user.repository.UserRepository;
 import com.tj.tjp.domain.auth.security.principal.AuthenticatedUser;
 import com.tj.tjp.domain.auth.security.service.TokenService;
 import com.tj.tjp.domain.social.service.SocialAccountService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,8 +54,9 @@ public class AuthService {
      * 일반 로그인(email/password) 처리
      */
     @Transactional
-    public LoginResult login(String email, String password, HttpServletResponse response) {
+    public LoginResult login(String email, String password, HttpServletRequest request, HttpServletResponse response) {
         log.info("authService 로그인시도 : email={}", email);
+
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password)
         );
@@ -81,6 +83,8 @@ public class AuthService {
         }
 
         log.info("login 토큰 발급 시작");
+        // 기존 리프레스 토큰이 있다면 블랙리스트 등록
+        tokenService.invalidOldRefreshToken(request);
         // jwt 발급
         // 액세스 토큰은 헤더에만
         tokenService.issueAccessTokenHeader(response, user.getEmail(), new ArrayList<>(user.getRoles()));

@@ -1,4 +1,4 @@
-package com.tj.tjp.infrastructure.sercurity;
+package com.tj.tjp.infrastructure.security;
 
 import com.tj.tjp.infrastructure.config.properties.jwt.JwtProperties;
 import lombok.RequiredArgsConstructor;

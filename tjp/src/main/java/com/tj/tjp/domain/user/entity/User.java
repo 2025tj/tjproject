@@ -52,6 +52,19 @@ public class User {
 //    @Builder.Default
     private String status = UserStatus.ACTIVE.name(); // ACTIVE, INACTIVE, BLOCKED 등
 
+    @Column(name="withdrawn_at")
+    private LocalDateTime withdrawnAt;
+
+    public void withdraw(int graceDays) {
+        this.status = UserStatus.INACTIVE.name();
+        this.withdrawnAt = LocalDateTime.now();
+    }
+
+    public void cancelWithdrawal() {
+        this.status = UserStatus.ACTIVE.name();
+        this.withdrawnAt = null;
+    }
+
     public void updatePassword(String password) {
         this.password = password;
     }

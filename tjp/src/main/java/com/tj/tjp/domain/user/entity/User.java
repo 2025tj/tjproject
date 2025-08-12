@@ -2,6 +2,7 @@ package com.tj.tjp.domain.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -55,14 +56,19 @@ public class User {
     @Column(name="withdrawn_at")
     private LocalDateTime withdrawnAt;
 
+    @Column(name="delete_scheduled_at")
+    private LocalDateTime deleteScheduledAt;
+
     public void withdraw(int graceDays) {
         this.status = UserStatus.INACTIVE.name();
         this.withdrawnAt = LocalDateTime.now();
+        this.deleteScheduledAt = this.withdrawnAt.plusDays(graceDays);
     }
 
     public void cancelWithdrawal() {
         this.status = UserStatus.ACTIVE.name();
         this.withdrawnAt = null;
+        this.deleteScheduledAt= null;
     }
 
     public void updatePassword(String password) {

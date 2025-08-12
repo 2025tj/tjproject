@@ -83,6 +83,7 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/auth/signup",
                                 "/api/auth/verify",
+                                "/api/auth/reactivate",
                                 "/api/social/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",

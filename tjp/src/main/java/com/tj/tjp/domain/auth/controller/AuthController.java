@@ -2,14 +2,17 @@ package com.tj.tjp.domain.auth.controller;
 
 import com.tj.tjp.common.dto.ApiResponse;
 import com.tj.tjp.common.exception.EmailNotVerifiedException;
+import com.tj.tjp.domain.auth.dto.ReactivateRequest;
 import com.tj.tjp.domain.auth.dto.login.LoginRequest;
 import com.tj.tjp.domain.auth.dto.login.LoginResult;
 import com.tj.tjp.domain.auth.dto.signup.SignupRequest;
+import com.tj.tjp.domain.auth.exception.AccountInactiveException;
 import com.tj.tjp.domain.auth.security.principal.AuthenticatedUser;
 import com.tj.tjp.domain.auth.service.AuthService;
 import com.tj.tjp.domain.auth.security.service.TokenService;
 import com.tj.tjp.domain.auth.service.PasswordResetService;
 import com.tj.tjp.domain.email.service.EmailVerificationService;
+import com.tj.tjp.domain.user.service.UserLifecycleService;
 import com.tj.tjp.domain.user.service.UserService;
 import com.tj.tjp.common.util.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +39,7 @@ public class AuthController {
     private final UserService userService;
     private final AuthService authService;
     private final TokenService tokenService;
+    private final UserLifecycleService userLifecycleService;
     private final EmailVerificationService emailVerificationService;
     private final PasswordResetService passwordResetService;
 
@@ -73,6 +77,10 @@ public class AuthController {
             String message = (String) RequestContextHolder.currentRequestAttributes()
                     .getAttribute("loginMessage", RequestAttributes.SCOPE_REQUEST);
             return ResponseEntity.ok(ApiResponse.success(message, result));
+        } catch (AccountInactiveException e) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("ACCOUNT_INACTIVE", e.getMessage()));
         } catch (BadCredentialsException e) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -128,6 +136,13 @@ public class AuthController {
     @GetMapping("/oauth2/complete")
     public ResponseEntity<ApiResponse<Void>> oauth2Complete() {
         return ResponseEntity.ok(ApiResponse.success("OAuth2 인증이 완료되었습니다."));
+    }
+
+    @Operation(summary = "탈퇴 복구", description = "탈퇴 유예상태의 사용자를 복구합니다.")
+    @PostMapping("/reactivate")
+    public ResponseEntity<ApiResponse<Void>> reactivate(@Valid @RequestBody ReactivateRequest req) {
+        userLifecycleService.reactivateByCredential(req.email(), req.password());
+        return ResponseEntity.ok(ApiResponse.success("게정이 복구되었습니다. 다시 로그인하세요."));
     }
 }
 

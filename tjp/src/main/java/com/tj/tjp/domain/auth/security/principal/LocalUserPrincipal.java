@@ -38,14 +38,26 @@ public class LocalUserPrincipal implements UserDetails, AuthenticatedUser {
     }
 
     @Override public boolean isAccountNonExpired() { return true; }
-    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isAccountNonLocked() {
+        // BLOCKED면 잠금처리
+        return !"BLOCKED".equalsIgnoreCase(safeStatus());
+    }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled() { return true; }
-
+    @Override
+    public boolean isEnabled() {
+        // ACTIVE일 때만 로그인 허용
+        return "ACTIVE".equalsIgnoreCase(safeStatus());
+    }
     @Override
     public String getEmail() {
         return user.getEmail();
     }
+
+    private String safeStatus() {
+        return user.getStatus() == null ? "ACTIVE" : user.getStatus();
+    }
+
+
 
 
 }

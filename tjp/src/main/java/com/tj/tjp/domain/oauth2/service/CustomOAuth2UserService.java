@@ -2,6 +2,7 @@ package com.tj.tjp.domain.oauth2.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tj.tjp.domain.auth.exception.AccountStatusException;
 import com.tj.tjp.domain.auth.security.service.TokenService;
 import com.tj.tjp.domain.social.entity.SocialAccount;
 import com.tj.tjp.domain.user.entity.User;
@@ -74,6 +75,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
             if (currentAuth != null && currentAuth.getPrincipal() instanceof OAuth2UserPrincipal principal) {
                 User currentUser = principal.getUser();
+
+                assertActive(currentUser);
 
                 // 이미 연동된 계정인지 검사
                 Optional<SocialAccount> existing = socialAccountRepository.findByProviderAndProviderId(provider, providerId);
@@ -186,10 +189,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         if (socialOpt.isPresent()) {
             User user = socialOpt.get().getUser();
+
+            assertActive(user);
+
             return new OAuth2UserPrincipal(user, oAuth2User.getAttributes());
         } else {
             log.info("소셜 계정 회원가입 필요: {} ({})", email, provider);
             throw new OAuth2SignupRequiredException(email, provider, providerId);
+        }
+    }
+
+    private void assertActive(User user) {
+        String st = user.getStatus();
+        if ("INACTIVE".equalsIgnoreCase(st)) {
+            throw new AccountStatusException("탈퇴 유예 중인 계정입니다. 복구 후 이용해 주세요.");
+        }
+        if ("BLOCKED".equalsIgnoreCase(st)) {
+            throw new AccountStatusException("차단된 계정입니다. 관리자에게 문의하세요.");
         }
     }
 }

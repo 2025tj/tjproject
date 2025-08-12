@@ -1,5 +1,6 @@
 package com.tj.tjp.domain.oauth2.handler;
 
+import com.tj.tjp.domain.auth.exception.AccountStatusException;
 import com.tj.tjp.infrastructure.config.properties.FrontendProperties;
 import com.tj.tjp.common.exception.OAuth2SignupRequiredException;
 import com.tj.tjp.domain.auth.security.jwt.OneTimeLinkCookieProvider;
@@ -14,6 +15,8 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
@@ -42,6 +45,14 @@ public class CustomOAuth2FailureHandler implements AuthenticationFailureHandler 
 //            issueOneTimeLink(res, signEx.getEmail(), signEx.getProvider(), signEx.getProviderId());
             String url = frontendProps.getRedirectUrls().get("signup");
             res.sendRedirect(url);
+            return;
+        }
+
+        // 상태 차단 응답
+        if (ex instanceof AccountStatusException) {
+            String url = frontendProps.getRedirectUrls().getOrDefault("login","/login");
+            String qp = URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+            res.sendRedirect(url + "?oauth_error=" +qp);
             return;
         }
 

@@ -78,6 +78,15 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("탈퇴 처리되었습니다. 14일 후 계정이 영구 삭제됩니다. "));
     }
 
+    @Operation(summary = "탈퇴 취소(복구)", description = "유예기간 중 계정을 복구합니다.")
+    @PostMapping("/me/restore")
+    public ResponseEntity<ApiResponse<Void>> cancelWithdraw(
+            @AuthenticationPrincipal LocalUserPrincipal principal
+    ) {
+        userLifecycleService.cancelWithdrawal(principal.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("탈퇴가 취소되어 계정이 복구되었습니다."));
+    }
+
 
 
 //    @PostMapping("/link-social")

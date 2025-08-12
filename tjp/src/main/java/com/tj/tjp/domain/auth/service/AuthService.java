@@ -2,6 +2,7 @@
 package com.tj.tjp.domain.auth.service;
 
 import com.tj.tjp.domain.auth.dto.login.LoginResult;
+import com.tj.tjp.domain.auth.exception.AccountInactiveException;
 import com.tj.tjp.domain.subscription.entity.PlanType;
 import com.tj.tjp.domain.subscription.entity.Subscription;
 import com.tj.tjp.domain.subscription.repository.SubscriptionRepository;
@@ -64,6 +65,12 @@ public class AuthService {
         User user = principal.getUser();
         log.info("login 인증 성공: userId={}, nickname={}, roles{}", user.getId(), user.getNickname(), user.getRoles());
 //        List<String> roles = new ArrayList<>(entity.getRoles());
+
+        // INACTIVE 상태 차단
+        if ("INACTIVE".equalsIgnoreCase(user.getStatus())) {
+            log.warn("비활성 계정 로그인 시도: email={}", email);
+            throw new AccountInactiveException("탈퇴 유예 중인 계정입니다.");
+        }
 
         // 이메일 인증 유예기간 체크 및 상태 변경, 메일 재발송
         if (!user.isEmailVerified()) {

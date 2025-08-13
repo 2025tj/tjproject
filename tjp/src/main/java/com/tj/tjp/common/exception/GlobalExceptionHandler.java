@@ -2,6 +2,7 @@ package com.tj.tjp.common.exception;
 
 import com.tj.tjp.common.dto.ApiResponse;
 import com.tj.tjp.common.dto.ErrorResponse;
+import com.tj.tjp.domain.auth.exception.AccountInactiveException;
 import com.tj.tjp.domain.auth.security.exception.RefreshTokenReuseDetectedException;
 import com.tj.tjp.dto.error.EmailVerificationErrorResponse;
 import com.tj.tjp.dto.error.OAuth2ErrorResponse;
@@ -26,6 +27,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AccountInactiveException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInactive(AccountInactiveException ex) {
+        return ResponseEntity.status(423)
+                .body(ApiResponse.error("ACCOUNT_INACTIVE", ex.getMessage()));
+    }
 
     @ExceptionHandler(RefreshTokenReuseDetectedException.class)
     public ResponseEntity<ApiResponse<Void>> handleReuse() {

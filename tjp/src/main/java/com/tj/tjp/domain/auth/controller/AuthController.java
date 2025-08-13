@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestAttributes;
@@ -77,6 +78,10 @@ public class AuthController {
             String message = (String) RequestContextHolder.currentRequestAttributes()
                     .getAttribute("loginMessage", RequestAttributes.SCOPE_REQUEST);
             return ResponseEntity.ok(ApiResponse.success(message, result));
+        } catch (DisabledException e) {
+            return ResponseEntity
+                    .status(423)
+                    .body(ApiResponse.error("ACCOUNT_INACTIVE", "탈퇴 유예 중인 계정입니다. 복구 후 이용해 주세요."));
         } catch (AccountInactiveException e) {
             return ResponseEntity
                     .status(HttpStatus.FORBIDDEN)

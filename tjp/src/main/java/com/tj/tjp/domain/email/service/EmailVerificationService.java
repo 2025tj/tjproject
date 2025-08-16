@@ -1,17 +1,20 @@
 package com.tj.tjp.domain.email.service;
 
-import com.tj.tjp.infrastructure.config.properties.FrontendProperties;
-import com.tj.tjp.domain.email.entity.EmailVerificationToken;
-import com.tj.tjp.domain.user.entity.User;
-import com.tj.tjp.domain.email.repository.EmailVerificationTokenRepository;
-import com.tj.tjp.domain.user.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.tj.tjp.domain.email.entity.EmailVerificationToken;
+import com.tj.tjp.domain.email.repository.EmailVerificationTokenRepository;
+import com.tj.tjp.domain.user.entity.User;
+import com.tj.tjp.domain.user.repository.UserRepository;
+import com.tj.tjp.infrastructure.config.properties.FrontendProperties;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -19,6 +22,7 @@ import java.util.UUID;
  * - 회원가입 시 인증 메일 발송
  * - 인증 토큰 생성/저장/검증 등 이메일 인증 전체 흐름 담당
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class EmailVerificationService {
@@ -111,25 +115,52 @@ public class EmailVerificationService {
      */
     @Transactional
     public void verifyEmailToken(String token) {
-        // 1. 토큰 조회 및 유효성 검증
-        EmailVerificationToken emailVerificationToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("잘못된 인증 토큰입니다."));
+        log.info("verifyEmailToken : token ={}", token);
+        try {
+            // 1. 토큰 조회 및 유효성 검증
+            EmailVerificationToken emailVerificationToken = tokenRepository.findByToken(token)
+            .orElseThrow(() -> new IllegalArgumentException("잘못된 인증 토큰입니다."));
+            log.info("emailVerificationToken : {}, userId={}, expiredAt={}, used={}",
+                emailVerificationToken.getToken(), 
+                emailVerificationToken.getUser().getId(), 
+                emailVerificationToken.getExpiredAt(), 
+                emailVerificationToken.isUsed());
 
-        if (emailVerificationToken.isUsed() || emailVerificationToken.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("토큰이 만료되었거나 이미 사용되었습니다.");
+            if (emailVerificationToken.isUsed() || emailVerificationToken.getExpiredAt().isBefore(LocalDateTime.now())) {
+                log.warn("verifyEmailToken failed: userId={}, expiredAt={}, now={}",
+                    emailVerificationToken.getUser().getId(),
+                    emailVerificationToken.getExpiredAt(),
+                    LocalDateTime.now());
+                throw new IllegalStateException("토큰이 만료되었거나 이미 사용되었습니다.");
+            }
+
+            // 2. 유저 정보 가져오기 (토큰과 연관된 유저)
+            User user = userRepository.findById(emailVerificationToken.getUser().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+            log.info("userId ={}, email={}, emailVerified={}",
+                user.getId(),
+                user.getEmail(),
+                user.isEmailVerified());
+
+            // 3. 인증 처리 (이메일 인증 완료)
+            user.verifyEmail(); // emailVerified=true, emailVerifiedAt=now()
+            userRepository.save(user);
+            log.info("verifyEmail() : userId={}, email={}, emailVerified={}",
+                user.getId(),
+                user.getEmail(),
+                user.isEmailVerified());
+
+            // 4. 토큰 사용 처리 (1회성)
+            emailVerificationToken.markUsed(true);
+            tokenRepository.save(emailVerificationToken);
+            log.info("markUsed(true) : token={}, used={}",
+                emailVerificationToken.getToken(),
+                emailVerificationToken.isUsed());
+        } catch (Exception e) {
+            log.error("verifyEmailToken 오류 : token ={}", token, e.getMessage(), e);
+            throw e;
         }
-
-        // 2. 유저 정보 가져오기 (토큰과 연관된 유저)
-        User user = userRepository.findById(emailVerificationToken.getUser().getId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-
-        // 3. 인증 처리 (이메일 인증 완료)
-        user.verifyEmail(); // emailVerified=true, emailVerifiedAt=now()
-        userRepository.save(user);
-
-        // 4. 토큰 사용 처리 (1회성)
-        emailVerificationToken.markUsed(true);
-        tokenRepository.save(emailVerificationToken);
+        
     }
 
     /**

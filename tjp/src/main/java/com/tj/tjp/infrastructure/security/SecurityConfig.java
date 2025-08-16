@@ -2,15 +2,6 @@ package com.tj.tjp.infrastructure.security;
 
 //import com.tj.tjp.security.CustomOAuth2FailureHandler;
 //import com.tj.tjp.security.service.CustomOAuth2UserService;
-import com.tj.tjp.domain.auth.security.filter.JwtAuthenticationFilter;
-import com.tj.tjp.domain.oauth2.handler.CustomOAuth2FailureHandler;
-import com.tj.tjp.domain.oauth2.handler.CustomOAuth2SuccessHandler;
-//import com.tj.tjp.security.OAuth2UserCumstomService;
-import com.tj.tjp.domain.oauth2.service.CustomOAuth2UserService;
-import com.tj.tjp.infrastructure.config.properties.FrontendProperties;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,6 +15,16 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+
+import com.tj.tjp.domain.auth.security.filter.JwtAuthenticationFilter;
+import com.tj.tjp.domain.oauth2.handler.CustomOAuth2FailureHandler;
+import com.tj.tjp.domain.oauth2.handler.CustomOAuth2SuccessHandler;
+import com.tj.tjp.domain.oauth2.service.CustomOAuth2UserService;
+import com.tj.tjp.infrastructure.config.properties.FrontendProperties;
+
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @EnableWebSecurity
@@ -67,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/payments/webhook").permitAll()
                         .requestMatchers("/api/payment/webhook").permitAll()
                         .requestMatchers("/redis-test/**").permitAll()
+                        .requestMatchers("/email/verify").permitAll()
                         .requestMatchers(
                                 "/api/users/me",
                                 "/api/users/pending-social-link",

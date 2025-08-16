@@ -1,12 +1,20 @@
 package com.tj.tjp.domain.email.controller;
 
-import com.tj.tjp.domain.email.service.EmailVerificationService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.tj.tjp.domain.email.service.EmailVerificationService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestController
 @RequestMapping("/api/email")
 @RequiredArgsConstructor
@@ -23,10 +31,13 @@ public class EmailVerificationController {
      */
     @GetMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        log.info("controller.verifyEmail : token ={}", token);
         try {
             emailVerificationService.verifyEmailToken(token);
+            log.info("verifyEmailToken : token ={}", token);
             return ResponseEntity.ok("이메일 인증이 완료되었습니다.");
         } catch (Exception e) {
+            log.error("controller.verifyEmail : token ={}", token, e.getMessage(), e);
             return ResponseEntity.badRequest().body("인증에 실패했습니다: " + e.getMessage());
         }
     }

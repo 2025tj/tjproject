@@ -15,6 +15,7 @@ public record RefundRequestDto(
     Integer originalPrice,
     Integer approvedAmount,
     LocalDateTime requestedAt,
+    LocalDateTime processedAt,
     RefundStatus status
 ) {
     public static RefundRequestDto from(RefundRequest request) {
@@ -24,6 +25,7 @@ public record RefundRequestDto(
                 .plantype(request.getSubscription().getPlan().getName())
                 .originalPrice(request.getSubscription().getPlan().getPrice())
                 .approvedAmount(request.getApprovedAmount())
+                .processedAt(request.getProcessedAt())
                 .requestedAt(request.getRequestedAt())
                 .status(request.getStatus())
                 .build();
